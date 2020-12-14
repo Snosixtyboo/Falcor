@@ -116,19 +116,24 @@ RenderPassReflection ExampleBlitPass::reflect(const CompileData& compileData)
     RenderPassReflection reflector;
 
     addRenderPassInputs(reflector, kGBufferChannels);
-    //reflector.addOutput("output", "the target texture").format(ResourceFormat::RGBA32Float).texture2D(0,0, 1);
-    reflector.addOutput("output", "the target texture");
+    reflector.addOutput("output", "the target texture").format(ResourceFormat::RGBA32Float).texture2D(0,0, 1);
+    reflector.addOutput("pictureOutput", "the target texture for PNGs");
     reflector.addOutput("normalsOut", "World-space normal, [0,1] range.").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
     return reflector;
 }
+
+static int captures = 0;
+static int lastTime = 0;
 
 void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     // renderData holds the requested resources
     const auto& output = renderData["output"]->asTexture();
     const auto& normalsOut = renderData["normalsOut"]->asTexture();
+    const auto& pictureOutput = renderData["pictureOutput"]->asTexture();
     mpFbo->attachColorTarget(output, 0);
     mpFbo->attachColorTarget(normalsOut, 1);
+    mpFbo->attachColorTarget(pictureOutput, 2);
 
     if (mpScene)
     {
@@ -157,19 +162,28 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
 
         mpPass->execute(pRenderContext, mpFbo);
 
-        if (capturing)
-        {
-            gpFramework->getGlobalClock().pause();
-            for (int i = 0; i < 3; i++)
+        if (capturing) {
+            if (clock() - lastTime > 2000)
             {
-                commandList5->RSSetShadingRate(dumpRates[i], nullptr);
-                mpPass->execute(pRenderContext, mpFbo);
-                gpDevice->flushAndSync();
-                
-                output->captureToFile(0, 0, "rendering_" + std::to_string(i) + ".png", Falcor::Bitmap::FileFormat::PngFile);
+                lastTime = clock();
+
+                gpFramework->getGlobalClock().pause();
+                gpFramework->pauseRenderer(true);
+                //gpDevice->flushAndSync();
+                captures++;
+                for (int i = 0; i < 3; i++)
+                {
+                    commandList5->RSSetShadingRate(dumpRates[i], nullptr);
+                    mpPass->execute(pRenderContext, mpFbo);
+                    //gpDevice->flushAndSync();
+                    //pThis->mpFence->gpuSignal(pCtx->getLowLevelData()->getCommandQueue());
+
+                    output->captureToFile(0, 0, "rendering_" + std::to_string(captures) + "_" + std::to_string(i) + ".exr", Falcor::Bitmap::FileFormat::ExrFile);
+                    pictureOutput->captureToFile(0, 0, "rendering_" + std::to_string(captures) + std::to_string(i) + ".png", Falcor::Bitmap::FileFormat::PngFile);
+                }
+                gpFramework->pauseRenderer(false);
+                gpFramework->getGlobalClock().play();
             }
-            capturing = false;
-            gpFramework->getGlobalClock().play();
         }
 
         commandList5->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);

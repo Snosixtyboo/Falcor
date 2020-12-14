@@ -29,6 +29,7 @@ struct PsOut
 {
     float4 color : SV_TARGET0;
     float4 normal : SV_TARGET1;
+	float4 pictureColor : SV_TARGET2;
 };
 
 
@@ -70,6 +71,7 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 	
 	PsOut psOut;
 	psOut.color = finalColor;
+	psOut.pictureColor = finalColor;
 	psOut.normal = float4(sd.N * 0.5f + 0.5f, 1.0f);
     return psOut;
 }

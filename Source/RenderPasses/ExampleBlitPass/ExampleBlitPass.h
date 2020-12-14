@@ -104,7 +104,7 @@ public:
             }
             if (keyEvent.key == KeyboardEvent::Key::C)
             {
-                capturing = true;
+                capturing = !capturing;
                 return true;
             }
         }
