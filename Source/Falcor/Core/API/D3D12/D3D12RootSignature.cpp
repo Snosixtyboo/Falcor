@@ -45,6 +45,7 @@ namespace Falcor
         D3D12_ROOT_SIGNATURE_DESC1& desc = versionedDesc.Desc_1_1;
         desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
         if (mDesc.mIsLocal) desc.Flags = D3D12_ROOT_SIGNATURE_FLAG_LOCAL_ROOT_SIGNATURE;
+        desc.Flags |= D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT;
         mSizeInBytes = params.signatureSizeInBytes; 
         mElementByteOffset = params.elementByteOffset;
 

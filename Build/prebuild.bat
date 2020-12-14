@@ -24,8 +24,8 @@ rem echo %4
 rem echo "Platform Short Name:"
 rem echo %5
 
-rem echo "Configuration:"
-rem echo %6
+echo "Configuration:"
+echo %6
 
 rem echo "Output Directory:"
 rem echo %7

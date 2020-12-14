@@ -194,6 +194,7 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D12StateObject);
     MAKE_SMART_COM_PTR(ID3D12Device);
     MAKE_SMART_COM_PTR(ID3D12GraphicsCommandList);
+    MAKE_SMART_COM_PTR(ID3D12GraphicsCommandList5);
     MAKE_SMART_COM_PTR(ID3D12Debug);
     MAKE_SMART_COM_PTR(ID3D12CommandQueue);
     MAKE_SMART_COM_PTR(ID3D12CommandAllocator);

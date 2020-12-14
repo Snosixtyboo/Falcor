@@ -83,7 +83,7 @@ PsOut ps(VSOut vOut, uint triangleIndex : SV_PrimitiveID)
     finalColor.rgb += evalMaterial(sd, gScene.lightProbe).color;
 
     psOut.color = finalColor;
-    psOut.normal = float4(vOut.normalW * 0.5f + 0.5f, 1.0f);
+    psOut.normal = float4(normalize(vOut.normalW) * 0.5f + 0.5f, 1.0f);
 
 #ifdef _OUTPUT_MOTION_VECTORS
     // Using vOut.posH.xy as pixel coordinate since it has the SV_Position semantic.
