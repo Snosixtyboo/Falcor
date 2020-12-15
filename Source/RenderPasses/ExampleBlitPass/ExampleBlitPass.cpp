@@ -175,7 +175,11 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
                 std::string fileEnding = dumpFormat == Falcor::Bitmap::FileFormat::PngFile ? ".png" : ".exr";
 
                 std::filesystem::path targetPath(targetDir);
-                targetPath /= std::to_string(framesCaptured);
+
+                std::stringstream ss;
+                ss << std::setw(4) << std::setfill('0') << framesCaptured;
+                std::string capturedStr = ss.str();
+                targetPath /= capturedStr;
 
                 if (!std::filesystem::create_directory(targetPath))
                 {
