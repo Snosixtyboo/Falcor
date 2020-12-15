@@ -5,6 +5,7 @@ import Scene.Shading;
 
 cbuffer PerFrameCB
 {
+	matrix <float, 4, 4> world2View;
 	float3 cameraPosition;
 	int lightCount;
 };
@@ -29,7 +30,8 @@ struct PsOut
 {
     float4 color : SV_TARGET0;
     float4 normal : SV_TARGET1;
-	float4 pictureColor : SV_TARGET2;
+	float4 viewDir : SV_TARGET2;
+	float4 viewNormal : SV_TARGET2;
 };
 
 
@@ -52,7 +54,6 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 	sd.ggxAlpha = max(0.0064, sd.linearRoughness * sd.linearRoughness);
 	
     float4 finalColor = float4(0, 0, 0, 1);
-
     for (uint l = 0; l < lightCount; l++)
     {
 		float shadowFactor = 1;
@@ -71,8 +72,9 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 	
 	PsOut psOut;
 	psOut.color = finalColor;
-	psOut.pictureColor = finalColor;
 	psOut.normal = float4(sd.N * 0.5f + 0.5f, 1.0f);
+	psOut.viewDir = mul(float4(sd.V, 0.0f), world2View);
+	psOut.viewNormal = mul(float4(sd.N, 0.0f), world2View);
     return psOut;
 }
 

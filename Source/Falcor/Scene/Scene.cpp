@@ -318,6 +318,10 @@ namespace Falcor
     {
         for (auto& camera : mCameras)
         {
+            if (camera->getFarPlane() / camera->getNearPlane() > 1000)
+            {
+                camera->setNearPlane(camera->getFarPlane() / 1000);
+            }
             updateAnimatable(*camera, *mpAnimationController, true);
             camera->beginFrame();
         }

@@ -39,6 +39,13 @@ private:
 
     bool capturing = false;
 
+    int framesCaptured;
+    size_t lastCaptureTime;
+    std::string targetDir = ".";
+    size_t captureInterval = 1000;
+
+    Falcor::Bitmap::FileFormat dumpFormat;
+
     int activeRateID = 0;
     D3D12_SHADING_RATE activeRate = D3D12_SHADING_RATE_1X1;
 
@@ -77,11 +84,6 @@ public:
     virtual void renderUI(Gui::Widgets& widget) override;
     virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
     virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
-
-    const D3D12_SHADING_RATE dumpRates[3] = {
-            D3D12_SHADING_RATE_1X1,
-            D3D12_SHADING_RATE_2X2,
-            D3D12_SHADING_RATE_4X4 };
 
     const D3D12_SHADING_RATE rates[7] = {
                 D3D12_SHADING_RATE_1X1,

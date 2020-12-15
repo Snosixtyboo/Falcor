@@ -26,6 +26,7 @@
  # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************/
 #include "ExampleBlitPass.h"
+#include <filesystem>
 
 const ChannelList ExampleBlitPass::kGBufferChannels =
 {
@@ -75,6 +76,9 @@ void ExampleBlitPass::setScene(RenderContext* pRenderContext, const Scene::Share
     {
         mpScene = pScene;
 
+        lastCaptureTime = 0;
+        framesCaptured = 0;
+
         numLights = pScene->getLightCount();
         if (numLights)
         {
@@ -117,23 +121,24 @@ RenderPassReflection ExampleBlitPass::reflect(const CompileData& compileData)
 
     addRenderPassInputs(reflector, kGBufferChannels);
     reflector.addOutput("output", "the target texture").format(ResourceFormat::RGBA32Float).texture2D(0,0, 1);
-    reflector.addOutput("pictureOutput", "the target texture for PNGs");
     reflector.addOutput("normalsOut", "World-space normal, [0,1] range.").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
+    reflector.addOutput("viewDirsOut", "View directions").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     return reflector;
 }
-
-static int captures = 0;
-static int lastTime = 0;
 
 void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     // renderData holds the requested resources
     const auto& output = renderData["output"]->asTexture();
     const auto& normalsOut = renderData["normalsOut"]->asTexture();
-    const auto& pictureOutput = renderData["pictureOutput"]->asTexture();
+    const auto& viewDirsOut = renderData["viewDirsOut"]->asTexture();
+    const auto& viewNormalsOut = renderData["viewNormalsOut"]->asTexture();
+
     mpFbo->attachColorTarget(output, 0);
     mpFbo->attachColorTarget(normalsOut, 1);
-    mpFbo->attachColorTarget(pictureOutput, 2);
+    mpFbo->attachColorTarget(viewDirsOut, 2);
+    mpFbo->attachColorTarget(viewNormalsOut, 3);
 
     if (mpScene)
     {
@@ -144,13 +149,13 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
 
         const auto& posW = renderData["posW"]->asTexture();
         const auto& normW = renderData["normW"]->asTexture();
-        const auto& diffuse = renderData["diffuseOpacity"]->asTexture();
+        const auto& diffuseOpacity = renderData["diffuseOpacity"]->asTexture();
         const auto& specRough = renderData["specRough"]->asTexture();
         const auto& emissive = renderData["emissive"]->asTexture();
 
         mpPass["gPosW"] = posW;
         mpPass["gNormW"] = normW;
-        mpPass["gDiffuse"] = diffuse;
+        mpPass["gDiffuse"] = diffuseOpacity;
         mpPass["gSpecRough"] = specRough;
         mpPass["gEmissive"] = emissive;
 
@@ -159,30 +164,56 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
         mpPass["lights"] = mpLightsBuffer;
 
         pCB["cameraPosition"] = mpScene->getCamera()->getPosition();
+        pCB["world2View"] = mpScene->getCamera()->getViewMatrix();
 
         mpPass->execute(pRenderContext, mpFbo);
 
         if (capturing) {
-            if (clock() - lastTime > 2000)
+            if (clock() - lastCaptureTime > captureInterval)
             {
-                lastTime = clock();
+                dumpFormat = Falcor::Bitmap::FileFormat::ExrFile;
+                std::string fileEnding = dumpFormat == Falcor::Bitmap::FileFormat::PngFile ? ".png" : ".exr";
+
+                std::filesystem::path targetPath(targetDir);
+                targetPath /= std::to_string(framesCaptured);
+
+                if (!std::filesystem::create_directory(targetPath))
+                {
+                    logError("Failed to create directory " + targetPath.string() + " for frame dumps!", Logger::MsgBox::RetryAbort);
+                    return;
+                }
 
                 gpFramework->getGlobalClock().pause();
                 gpFramework->pauseRenderer(true);
-                //gpDevice->flushAndSync();
-                captures++;
-                for (int i = 0; i < 3; i++)
+
+                const D3D12_SHADING_RATE dumpRates[3] = { D3D12_SHADING_RATE_1X1, D3D12_SHADING_RATE_2X2, D3D12_SHADING_RATE_4X4 };
+                const std::string dumpRateNames[3] = { "1x1", "2x2", "4x4" };
+
+                std::filesystem::path diffuseOpacityFile = targetPath / ("diffuse-opacity_" + dumpRateNames[0] + fileEnding);
+                std::filesystem::path specRoughFile = targetPath / ("specular-roughness_" + dumpRateNames[0] + fileEnding);
+                std::filesystem::path emissiveFile = targetPath / ("emissive_" + dumpRateNames[0] + fileEnding);
+                std::filesystem::path viewFile = targetPath / ("view_" + dumpRateNames[0] + fileEnding);
+                std::filesystem::path normalFile = targetPath / ("normal_" + dumpRateNames[0] + fileEnding);
+
+                diffuseOpacity->captureToFile(0, 0, diffuseOpacityFile.string(), dumpFormat);
+                specRough->captureToFile(0, 0, specRoughFile.string(), dumpFormat);
+                emissive->captureToFile(0, 0, emissiveFile.string(), dumpFormat);
+                viewDirsOut->captureToFile(0, 0, viewFile.string(), dumpFormat);
+                viewNormalsOut->captureToFile(0, 0, normalFile.string(), dumpFormat);
+                
+                for (int i = 0; i < sizeof(dumpRates)/sizeof(dumpRates[0]); i++)
                 {
                     commandList5->RSSetShadingRate(dumpRates[i], nullptr);
                     mpPass->execute(pRenderContext, mpFbo);
-                    //gpDevice->flushAndSync();
-                    //pThis->mpFence->gpuSignal(pCtx->getLowLevelData()->getCommandQueue());
-
-                    output->captureToFile(0, 0, "rendering_" + std::to_string(captures) + "_" + std::to_string(i) + ".exr", Falcor::Bitmap::FileFormat::ExrFile);
-                    pictureOutput->captureToFile(0, 0, "rendering_" + std::to_string(captures) + std::to_string(i) + ".png", Falcor::Bitmap::FileFormat::PngFile);
+                    std::filesystem::path outputFile = targetPath / ("output_" + dumpRateNames[i] + ".exr");
+                    output->captureToFile(0, 0, outputFile.string(), dumpFormat);
                 }
+
                 gpFramework->pauseRenderer(false);
                 gpFramework->getGlobalClock().play();
+
+                lastCaptureTime = clock();
+                framesCaptured++;
             }
         }
 
@@ -192,4 +223,8 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
 
 void ExampleBlitPass::renderUI(Gui::Widgets& widget)
 {
+    // Capturing control
+    widget.textbox("Directory for captured images", targetDir);
+    widget.var("Capture interval (ms)", captureInterval);
+    capturing = capturing ? !widget.button("Stop capturing") : widget.button("Start capturing");
 }
