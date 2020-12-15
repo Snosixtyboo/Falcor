@@ -73,7 +73,14 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 	PsOut psOut;
 	psOut.color = finalColor;
 	psOut.normal = float4(sd.N * 0.5f + 0.5f, 1.0f);
-	psOut.viewDir = mul(float4(sd.V, 0.0f), world2View);
+	if (sd.posW.x == 0 && sd.posW.y == 0 && sd.posW.z == 0)
+	{
+		psOut.viewDir = float4(0,0,0,0);
+	}
+	else
+	{
+		psOut.viewDir = mul(float4(sd.V, 0.0f), world2View);
+	}
 	psOut.viewNormal = mul(float4(sd.N, 0.0f), world2View);
     return psOut;
 }
