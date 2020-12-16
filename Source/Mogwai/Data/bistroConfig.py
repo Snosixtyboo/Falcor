@@ -48,7 +48,7 @@ def render_graph_DefaultRenderGraph():
 m.addGraph(render_graph_DefaultRenderGraph())
 
 # Scene
-m.loadScene('C:/Users/gifty/Downloads/Bistro_v5_1/BistroInterior.fbx')
+m.loadScene('../../../Scenes/Bistro_v5_1/BistroInterior.fbx')
 m.scene.renderSettings = SceneRenderSettings(useEnvLight=True, useAnalyticLights=True, useEmissiveLights=True)
 m.scene.cameraSpeed = 1.0
 
@@ -65,4 +65,3 @@ t.framerate = 0
 # Frame Capture
 fc.outputDir = '.'
 fc.baseFilename = 'Mogwai'
-
