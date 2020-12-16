@@ -27,6 +27,7 @@
  **************************************************************************/
 #include "ExampleBlitPass.h"
 #include <filesystem>
+#include <cstdlib>
 
 const ChannelList ExampleBlitPass::kGBufferChannels =
 {
@@ -169,7 +170,9 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
         mpPass->execute(pRenderContext, mpFbo);
 
         if (capturing) {
-            if (clock() - lastCaptureTime > captureInterval)
+            float antiBias = 0.9f + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.2f)));
+
+            if (clock() - lastCaptureTime > (captureInterval * antiBias))
             {
                 dumpFormat = Falcor::Bitmap::FileFormat::ExrFile;
                 std::string fileEnding = dumpFormat == Falcor::Bitmap::FileFormat::PngFile ? ".png" : ".exr";
@@ -204,7 +207,7 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
                 emissive->captureToFile(0, 0, emissiveFile.string(), dumpFormat);
                 viewDirsOut->captureToFile(0, 0, viewFile.string(), dumpFormat);
                 viewNormalsOut->captureToFile(0, 0, normalFile.string(), dumpFormat);
-                
+
                 for (int i = 0; i < sizeof(dumpRates)/sizeof(dumpRates[0]); i++)
                 {
                     commandList5->RSSetShadingRate(dumpRates[i], nullptr);
