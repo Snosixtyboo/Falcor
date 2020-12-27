@@ -124,6 +124,7 @@ RenderPassReflection ExampleBlitPass::reflect(const CompileData& compileData)
     reflector.addOutput("normalsOut", "World-space normal, [0,1] range.").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
     reflector.addOutput("viewDirsOut", "View directions").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    reflector.addOutput("roughOpacOut", "Roughness and opacity in dedicated texture").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     return reflector;
 }
 
@@ -134,11 +135,13 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
     const auto& normalsOut = renderData["normalsOut"]->asTexture();
     const auto& viewDirsOut = renderData["viewDirsOut"]->asTexture();
     const auto& viewNormalsOut = renderData["viewNormalsOut"]->asTexture();
+    const auto& roughOpacOut = renderData["roughOpacOut"]->asTexture();
 
     mpFbo->attachColorTarget(output, 0);
     mpFbo->attachColorTarget(normalsOut, 1);
     mpFbo->attachColorTarget(viewDirsOut, 2);
     mpFbo->attachColorTarget(viewNormalsOut, 3);
+    mpFbo->attachColorTarget(roughOpacOut, 4);
 
     if (mpScene)
     {
@@ -198,12 +201,14 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
                 std::filesystem::path emissiveFile = targetPath / ("emissive_" + dumpRateNames[0] + fileEnding);
                 std::filesystem::path viewFile = targetPath / ("view_" + dumpRateNames[0] + fileEnding);
                 std::filesystem::path normalFile = targetPath / ("normal_" + dumpRateNames[0] + fileEnding);
+                std::filesystem::path roughOpacFile = targetPath / ("roughness-opacity_" + dumpRateNames[0] + fileEnding);
 
                 diffuseOpacity->captureToFile(0, 0, diffuseOpacityFile.string(), dumpFormat);
                 specRough->captureToFile(0, 0, specRoughFile.string(), dumpFormat);
                 emissive->captureToFile(0, 0, emissiveFile.string(), dumpFormat);
                 viewDirsOut->captureToFile(0, 0, viewFile.string(), dumpFormat);
                 viewNormalsOut->captureToFile(0, 0, normalFile.string(), dumpFormat);
+                roughOpacOut->captureToFile(0, 0, roughOpacFile.string(), dumpFormat);
                 
                 for (int i = 0; i < sizeof(dumpRates)/sizeof(dumpRates[0]); i++)
                 {

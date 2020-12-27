@@ -31,7 +31,8 @@ struct PsOut
     float4 color : SV_TARGET0;
     float4 normal : SV_TARGET1;
 	float4 viewDir : SV_TARGET2;
-	float4 viewNormal : SV_TARGET2;
+	float4 viewNormal : SV_TARGET3;
+    float4 roughOpac : SV_TARGET4;
 };
 
 
@@ -81,6 +82,7 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 	{
 		psOut.viewDir = mul(float4(sd.V, 0.0f), world2View);
 	}
+    psOut.roughOpac = float4(sd.linearRoughness, sd.opacity, 0, 0);
 	psOut.viewNormal = mul(float4(sd.N, 0.0f), world2View);
     return psOut;
 }

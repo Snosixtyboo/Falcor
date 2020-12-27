@@ -6,4 +6,7 @@
   <ItemGroup>
     <ClInclude Include="ExampleBlitPass.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ShaderSource Include="CopyPass.slang" />
+  </ItemGroup>
 </Project>
