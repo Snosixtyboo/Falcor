@@ -53,6 +53,8 @@ namespace Falcor
         */
         struct Desc
         {
+            uint32_t strict_width = 1920;           // Used as work around to have viewports bigger than what glfw allows
+            uint32_t strict_height = 1080;          // Used as work around to have viewports bigger than what glfw allows
             uint32_t width = 1920;                  ///< The width of the client area size.
             uint32_t height = 1080;                 ///< The height of the client area size.
             std::string title = "Falcor Sample";    ///< Window title.
@@ -116,7 +118,9 @@ namespace Falcor
 
         /** Get the width of the window's client area
         */
-        uint2 getClientAreaSize() const { return { mDesc.width, mDesc.height }; }
+        uint2 getClientAreaSize() const { return { mDesc.strict_width, mDesc.strict_height }; }
+
+        uint2 getPipelineSize() const { return { mDesc.width, mDesc.height }; }
 
         /** Get the descriptor
         */
@@ -125,8 +129,8 @@ namespace Falcor
         friend class ApiCallbacks;
         Window(ICallbacks* pCallbacks, const Desc& desc);
 
-        void updateWindowSize();
-        void setWindowSize(uint32_t width, uint32_t height);
+        void updateWindowSize(uint32_t width, uint32_t height);
+        void setWindowSize(uint32_t width, uint32_t height, uint32_t strict_width, uint32_t strict_height);
 
         Desc mDesc;
         GLFWwindow* mpGLFWWindow;

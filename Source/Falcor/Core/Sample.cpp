@@ -52,6 +52,10 @@ namespace Falcor
         auto width = pBackBufferFBO->getWidth();
         auto height = pBackBufferFBO->getHeight();
 
+        //auto pipeSize = mpWindow->getPipelineSize();
+        //auto width = pipeSize.x;
+        //auto height = pipeSize.y;
+
         // Recreate target fbo
         auto pCurrentFbo = mpTargetFBO;
         mpTargetFBO = Fbo::create2D(width, height, pBackBufferFBO->getDesc());
