@@ -348,18 +348,22 @@ namespace Falcor
     {
     }
 
-    void Window::updateWindowSize()
+    void Window::updateWindowSize(uint32_t width = 0, uint32_t height = 0)
     {
         // Actual window size may be clamped to slightly lower than monitor resolution
-        int32_t width, height;
-        glfwGetWindowSize(mpGLFWWindow, &width, &height);
-        setWindowSize(width, height);
+        int32_t strict_width, strict_height;
+        glfwGetWindowSize(mpGLFWWindow, &strict_width, &strict_height);
+        width = width == 0 ? strict_width : width;
+        height = height == 0 ? strict_height : height;
+        setWindowSize(width, height, strict_width, strict_height);
     }
 
-    void Window::setWindowSize(uint32_t width, uint32_t height)
+    void Window::setWindowSize(uint32_t width, uint32_t height, uint32_t strict_width=0, uint32_t strict_height = 0)
     {
         assert(width > 0 && height > 0);
 
+        mDesc.strict_width = strict_width == 0 ? width : strict_width;
+        mDesc.strict_height = strict_height == 0 ? height : strict_height;
         mDesc.width = width;
         mDesc.height = height;
         mMouseScale.x = 1.0f / (float)mDesc.width;
@@ -463,14 +467,14 @@ namespace Falcor
         glfwSetWindowSize(mpGLFWWindow, width, height);
 
         // In minimized mode GLFW reports incorrect window size
-        if (mDesc.mode == WindowMode::Minimized)
-        {
+        //if (mDesc.mode == WindowMode::Minimized)
+        //{
             setWindowSize(width, height);
-        }
-        else
-        {
-            updateWindowSize();
-        }
+        //}
+        //else
+        //{
+        //    updateWindowSize(width, height);
+        //}
 
         mpCallbacks->handleWindowSizeChange();
     }
