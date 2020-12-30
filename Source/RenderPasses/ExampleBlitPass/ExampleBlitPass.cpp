@@ -120,7 +120,7 @@ RenderPassReflection ExampleBlitPass::reflect(const CompileData& compileData)
     RenderPassReflection reflector;
 
     addRenderPassInputs(reflector, kGBufferChannels);
-    reflector.addOutput("output", "the target texture").format(ResourceFormat::RGBA32Float).texture2D(0,0, 1);
+    reflector.addInputOutput("color", "the color texture").format(ResourceFormat::RGBA32Float).texture2D(0,0, 1);
     reflector.addOutput("normalsOut", "World-space normal, [0,1] range.").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
     reflector.addOutput("viewDirsOut", "View directions").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
@@ -131,7 +131,7 @@ RenderPassReflection ExampleBlitPass::reflect(const CompileData& compileData)
 void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     // renderData holds the requested resources
-    const auto& output = renderData["output"]->asTexture();
+    const auto& output = renderData["color"]->asTexture();
     const auto& normalsOut = renderData["normalsOut"]->asTexture();
     const auto& viewDirsOut = renderData["viewDirsOut"]->asTexture();
     const auto& viewNormalsOut = renderData["viewNormalsOut"]->asTexture();

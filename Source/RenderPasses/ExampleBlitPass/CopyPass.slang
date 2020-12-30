@@ -44,6 +44,12 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 	ShadingData sd;
 	sd.emissive = gEmissive.SampleLevel(gSampler, texC, 0).xyz;
 	sd.posW = gPosW.SampleLevel(gSampler, texC, 0).xyz;
+
+    if (sd.posW.x == 0 && sd.posW.y == 0 && sd.posW.z == 0)
+    {
+        discard;
+    }
+
     sd.V = normalize(cameraPosition - sd.posW);
     sd.N = normalize(gNormW.SampleLevel(gSampler, texC, 0).xyz);
 	sd.uv = texC;
