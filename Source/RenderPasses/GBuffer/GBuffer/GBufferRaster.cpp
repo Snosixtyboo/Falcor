@@ -77,10 +77,14 @@ GBufferRaster::GBufferRaster(const Dictionary& dict)
     parseDictionary(dict);
 
     // Create raster program
-    Program::DefineList defines = { { "_DEFAULT_ALPHA_TEST", "" } };
+    // Program::DefineList defines = { { "_DEFAULT_ALPHA_TEST", "" } };
+    // ACTUALLY default isn't default at all bc if this is not defined (like in the depth prepass),
+    // it does hashed alpha testing
+    Program::DefineList defines = {  };
     Program::Desc desc;
     desc.addShaderLibrary(kProgramFile).vsEntry("vsMain").psEntry("psMain");
     desc.setShaderModel(shaderModel);
+    desc.setCompilerFlags(Falcor::Shader::CompilerFlags::GenerateDebugInfo);
     mRaster.pProgram = GraphicsProgram::create(desc, defines);
 
     // Initialize graphics state
