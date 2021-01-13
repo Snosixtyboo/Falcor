@@ -36,8 +36,8 @@ const ChannelList ExampleBlitPass::kGBufferChannels =
     { "normW",          "gNormW",           "world space normal",           true /* optional */, ResourceFormat::RGBA32Float },
     { "tangentW",       "gTangentW",        "world space tangent",          true /* optional */, ResourceFormat::RGBA32Float },
     { "texC",           "gTexC",            "texture coordinates",          true /* optional */, ResourceFormat::RGBA32Float },
-    { "diffuseOpacity", "gDiffuseOpacity",  "diffuse color and opacity",    true /* optional */, ResourceFormat::RGBA32Float },
-    { "specRough",      "gSpecRough",       "specular color and roughness", true /* optional */, ResourceFormat::RGBA32Float },
+    { "diffuseOpacity", "gDiffuseOpacity",  "diffuse color",                true /* optional */, ResourceFormat::RGBA32Float },
+    { "specRough",      "gSpecRough",       "specular color",               true /* optional */, ResourceFormat::RGBA32Float },
     { "emissive",       "gEmissive",        "emissive color",               true /* optional */, ResourceFormat::RGBA32Float },
     { "matlExtra",      "gMatlExtra",       "additional material data",     true /* optional */, ResourceFormat::RGBA32Float },
 };
@@ -178,10 +178,22 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
             if (clock() - lastCaptureTime > (captureInterval * antiBias))
             {
                 dumpFormat = Falcor::Bitmap::FileFormat::ExrFile;
-                std::string fileEnding = dumpFormat == Falcor::Bitmap::FileFormat::PngFile ? ".png" : ".exr";
+                std::string fileEnding;
+
+                if (dumpFormat == Falcor::Bitmap::FileFormat::PngFile)
+                    fileEnding = ".png";
+                else if (dumpFormat == Falcor::Bitmap::FileFormat::JpegFile)
+                    fileEnding = ".jpg";
+                else if (dumpFormat == Falcor::Bitmap::FileFormat::TgaFile)
+                    fileEnding = ".tga";
+                else if (dumpFormat == Falcor::Bitmap::FileFormat::BmpFile)
+                    fileEnding = ".bmp";
+                else if (dumpFormat == Falcor::Bitmap::FileFormat::PfmFile)
+                    fileEnding = ".pfm";
+                else if (dumpFormat == Falcor::Bitmap::FileFormat::ExrFile)
+                    fileEnding = ".exr";
 
                 std::filesystem::path targetPath(targetDir);
-
                 std::stringstream ss;
                 ss << std::setw(4) << std::setfill('0') << framesCaptured;
                 std::string capturedStr = ss.str();
@@ -217,7 +229,7 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
                 {
                     commandList5->RSSetShadingRate(dumpRates[i], nullptr);
                     mpPass->execute(pRenderContext, mpFbo);
-                    std::filesystem::path outputFile = targetPath / ("output_" + dumpRateNames[i] + ".exr");
+                    std::filesystem::path outputFile = targetPath / ("output_" + dumpRateNames[i] + fileEnding);
                     output->captureToFile(0, 0, outputFile.string(), dumpFormat);
                 }
 
