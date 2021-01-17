@@ -34,6 +34,7 @@ namespace Falcor
     BlendState::SharedPtr GraphicsStateObject::spDefaultBlendState;
     RasterizerState::SharedPtr GraphicsStateObject::spDefaultRasterizerState;
     DepthStencilState::SharedPtr GraphicsStateObject::spDefaultDepthStencilState;
+    StreamOutputState::SharedPtr GraphicsStateObject::spDefaultStreamOutputState;
 
     bool GraphicsStateObject::Desc::operator==(const GraphicsStateObject::Desc& other) const
     {
@@ -72,6 +73,15 @@ namespace Falcor
             b = b && (other.mpDepthStencilState == nullptr || other.mpDepthStencilState == spDefaultDepthStencilState);
         }
 
+        if (mpStreamOutputState)
+        {
+            b = b && (mpStreamOutputState == other.mpStreamOutputState);
+        }
+        else
+        {
+            b = b && (other.mpStreamOutputState == nullptr || other.mpStreamOutputState == spDefaultStreamOutputState);
+        }
+
         return b;
     }
 
@@ -89,12 +99,14 @@ namespace Falcor
             spDefaultBlendState = BlendState::create(BlendState::Desc());
             spDefaultDepthStencilState = DepthStencilState::create(DepthStencilState::Desc());
             spDefaultRasterizerState = RasterizerState::create(RasterizerState::Desc());
+            spDefaultStreamOutputState = StreamOutputState::create(StreamOutputState::Desc());
         }
 
         // Initialize default objects
         if (!mDesc.mpBlendState) mDesc.mpBlendState = spDefaultBlendState;
         if (!mDesc.mpRasterizerState) mDesc.mpRasterizerState = spDefaultRasterizerState;
         if (!mDesc.mpDepthStencilState) mDesc.mpDepthStencilState = spDefaultDepthStencilState;
+        if (!mDesc.mpStreamOutputState) mDesc.mpStreamOutputState = spDefaultStreamOutputState;
 
         apiInit();
     }

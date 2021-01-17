@@ -208,6 +208,16 @@ namespace Falcor
         return *this;
     }
 
+    GraphicsState& GraphicsState::setStreamOutputState(StreamOutputState::SharedPtr pStreamOutputState)
+    {
+        if (mDesc.getStreamOutputState() != pStreamOutputState)
+        {
+            mDesc.setStreamOutputState(pStreamOutputState);
+            mpGsoGraph->walk((void*)pStreamOutputState.get());
+        }
+        return *this;
+    }
+
     void GraphicsState::pushViewport(uint32_t index, const GraphicsState::Viewport& vp, bool setScissors)
     {
         mVpStack[index].push(mViewports[index]);

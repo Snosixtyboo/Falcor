@@ -508,6 +508,9 @@
     <ClInclude Include="Scene\Importer.h">
       <Filter>Scene</Filter>
     </ClInclude>
+    <ClInclude Include="Core\API\StreamOutputState.h">
+      <Filter>Core\API</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Core">
@@ -1196,6 +1199,9 @@
     </ClCompile>
     <ClCompile Include="Scene\Importer.cpp">
       <Filter>Scene</Filter>
+    </ClCompile>
+    <ClCompile Include="Core\API\StreamOutputState.cpp">
+      <Filter>Core\API</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

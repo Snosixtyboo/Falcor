@@ -31,6 +31,7 @@
 #include "Core/Program/ProgramVersion.h"
 #include "Core/API/RasterizerState.h"
 #include "Core/API/DepthStencilState.h"
+#include "Core/API/StreamOutputState.h"
 #include "Core/API/BlendState.h"
 #include "Core/API/RootSignature.h"
 #include "Core/API/VAO.h"
@@ -69,10 +70,12 @@ namespace Falcor
             Desc& setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState) { mpDepthStencilState = pDepthStencilState; return *this; }
             Desc& setSampleMask(uint32_t sampleMask) { mSampleMask = sampleMask; return *this; }
             Desc& setPrimitiveType(PrimitiveType type) { mPrimType = type; return *this; }
+            Desc& setStreamOutputState(StreamOutputState::SharedPtr pStreamOutputState) { mpStreamOutputState = pStreamOutputState; return *this; }
 
             BlendState::SharedPtr getBlendState() const { return mpBlendState; }
             RasterizerState::SharedPtr getRasterizerState() const { return mpRasterizerState; }
             DepthStencilState::SharedPtr getDepthStencilState() const { return mpDepthStencilState; }
+            StreamOutputState::SharedPtr getStreamOutputState() const { return mpStreamOutputState; }
             ProgramKernels::SharedConstPtr getProgramKernels() const { return mpProgram; }
             ProgramVersion::SharedConstPtr getProgramVersion() const { return mpProgram->getProgramVersion(); }
             RootSignature::SharedPtr getRootSignature() const { return mpRootSignature; }
@@ -90,6 +93,7 @@ namespace Falcor
             ProgramKernels::SharedConstPtr mpProgram;
             RasterizerState::SharedPtr mpRasterizerState;
             DepthStencilState::SharedPtr mpDepthStencilState;
+            StreamOutputState::SharedPtr mpStreamOutputState;
             BlendState::SharedPtr mpBlendState;
             uint32_t mSampleMask = kSampleMaskAll;
             RootSignature::SharedPtr mpRootSignature;
@@ -130,5 +134,6 @@ namespace Falcor
         static BlendState::SharedPtr spDefaultBlendState;
         static RasterizerState::SharedPtr spDefaultRasterizerState;
         static DepthStencilState::SharedPtr spDefaultDepthStencilState;
+        static StreamOutputState::SharedPtr spDefaultStreamOutputState;
     };
 }

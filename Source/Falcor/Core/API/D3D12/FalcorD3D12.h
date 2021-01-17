@@ -194,6 +194,7 @@ namespace Falcor
     MAKE_SMART_COM_PTR(ID3D12StateObject);
     MAKE_SMART_COM_PTR(ID3D12Device);
     MAKE_SMART_COM_PTR(ID3D12GraphicsCommandList);
+    MAKE_SMART_COM_PTR(ID3D12RootSignatureDeserializer);
     MAKE_SMART_COM_PTR(ID3D12GraphicsCommandList5);
     MAKE_SMART_COM_PTR(ID3D12Debug);
     MAKE_SMART_COM_PTR(ID3D12CommandQueue);
@@ -251,6 +252,7 @@ namespace Falcor
     using DepthStencilStateHandle = void*;
     using RasterizerStateHandle = void*;
     using BlendStateHandle = void*;
+    using StreamOutputStateHandle = void*;
     using DescriptorSetApiHandle = void*;
 
     inline constexpr uint32_t getMaxViewportCount() { return D3D12_VIEWPORT_AND_SCISSORRECT_OBJECT_COUNT_PER_PIPELINE; }

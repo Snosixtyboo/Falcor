@@ -209,6 +209,10 @@ namespace Falcor
         */
         GraphicsState& setDepthStencilState(DepthStencilState::SharedPtr pDepthStencilState);
 
+        /** Set a depth-stencil state.
+*/
+        GraphicsState& setStreamOutputState(StreamOutputState::SharedPtr pStreamOutputState);
+
         /** Get the currently bound depth-stencil state.
         */
         DepthStencilState::SharedPtr getDepthStencilState() const { return mDesc.getDepthStencilState(); }

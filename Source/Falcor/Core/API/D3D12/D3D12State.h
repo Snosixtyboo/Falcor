@@ -34,6 +34,7 @@
 namespace Falcor
 {
     class BlendState;
+    class StreamOutputState;
     class RasterizerState;
     class DepthStencilState;
     class VertexLayout;

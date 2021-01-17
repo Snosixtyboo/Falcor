@@ -81,6 +81,7 @@
     <ClInclude Include="Core\API\RootSignature.h" />
     <ClInclude Include="Core\API\Sampler.h" />
     <ClInclude Include="Core\API\Shader.h" />
+    <ClInclude Include="Core\API\StreamOutputState.h" />
     <ClInclude Include="Core\API\Texture.h" />
     <ClInclude Include="Core\API\VAO.h" />
     <ClInclude Include="Core\API\VertexLayout.h" />
@@ -454,6 +455,7 @@
     <ClCompile Include="Core\API\ResourceViews.cpp" />
     <ClCompile Include="Core\API\RootSignature.cpp" />
     <ClCompile Include="Core\API\Sampler.cpp" />
+    <ClCompile Include="Core\API\StreamOutputState.cpp" />
     <ClCompile Include="Core\API\Texture.cpp" />
     <ClCompile Include="Core\API\TextureLoader.cpp" />
     <ClCompile Include="Core\API\VAO.cpp" />

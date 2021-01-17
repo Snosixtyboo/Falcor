@@ -296,6 +296,15 @@ namespace Falcor
         desc.BackFace = getD3D12StencilOpDesc(pState->getStencilDesc(DepthStencilState::Face::Back));
     }
 
+    void initD3DStreamOutputDesc(const StreamOutputState* pState, D3D12_STREAM_OUTPUT_DESC& desc)
+    {
+        desc.NumStrides = (UINT)pState->getStrides().size();
+        desc.pBufferStrides = pState->getStrides().data();
+        desc.RasterizedStream = pState->getRasterizedStream();
+        desc.NumEntries = (UINT)pState->getDeclarations().size();
+        desc.pSODeclaration = pState->getDeclarations().data();
+    }
+
     D3D12_FILTER_TYPE getFilterType(Sampler::Filter filter)
     {
         switch (filter)
@@ -543,6 +552,7 @@ namespace Falcor
         initD3D12BlendDesc(gsoDesc.getBlendState().get(), desc.BlendState);
         initD3D12RasterizerDesc(gsoDesc.getRasterizerState().get(), desc.RasterizerState);
         initD3DDepthStencilDesc(gsoDesc.getDepthStencilState().get(), desc.DepthStencilState);
+        initD3DStreamOutputDesc(gsoDesc.getStreamOutputState().get(), desc.StreamOutput);
 
         if (gsoDesc.getVertexLayout())
         {

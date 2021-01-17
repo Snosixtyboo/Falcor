@@ -121,7 +121,7 @@ namespace Falcor
         /// Get a readable reference suitable for use as a function input argument.
         T*const* readRef() const { return &mpObject; }
 
-    protected:
+    public:
         // Disabled: do not take the address of a smart pointer.
         T** operator&();
 
