@@ -68,6 +68,13 @@ namespace Falcor
             setJitterInternal(jitter.x, jitter.y);
         }
 
+        if (!queuedConfigs.empty())
+        {
+            auto mat = queuedConfigs.front();
+            queuedConfigs.pop();
+            updateFromAnimation(mat);
+        }
+
         calculateCameraParameters();
 
         if (firstFrame) mPrevData = mData;

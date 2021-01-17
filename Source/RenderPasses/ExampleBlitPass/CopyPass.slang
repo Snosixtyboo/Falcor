@@ -38,6 +38,8 @@ struct PsOut
 
 PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 {
+    PsOut psOut;
+
 	float4 diffuseOp = gDiffuse.SampleLevel(gSampler, texC, 0);
 	float4 specRough = gSpecRough.SampleLevel(gSampler, texC, 0);
 	
@@ -47,7 +49,12 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 
     if (sd.posW.x == 0 && sd.posW.y == 0 && sd.posW.z == 0)
     {
-        discard;
+        psOut.color = float4(0,0,0,1);
+        psOut.normal = float4(0,0,0,1);
+        psOut.viewDir = float4(0,0,0,1);
+        psOut.roughOpac = float4(0,0,0,1);
+        psOut.viewNormal = float4(0,0,0,1);
+        return psOut;
     }
 
     sd.V = normalize(cameraPosition - sd.posW);
@@ -77,7 +84,6 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
     finalColor.a = sd.opacity;
     finalColor.rgb += evalMaterial(sd, tScene.lightProbe).color;
 	
-	PsOut psOut;
 	psOut.color = finalColor;
 	psOut.normal = float4(sd.N * 0.5f + 0.5f, 1.0f);
 	if (sd.posW.x == 0 && sd.posW.y == 0 && sd.posW.z == 0)

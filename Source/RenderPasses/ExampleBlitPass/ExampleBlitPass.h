@@ -115,4 +115,18 @@ public:
 
 private:
     ExampleBlitPass();
+
+    void loadViewPoints();
+
+    enum class ViewpointGeneration { FromFile, FromScenePath};
+
+    std::queue<glm::mat4x4> camMatrices;
+
+    ViewpointGeneration viewpointMethod = ViewpointGeneration::FromFile;
+    uint32_t viewPointToCapture = 0;
+
+    Gui::DropdownList viewpointList = {
+        {(uint32_t)ViewpointGeneration::FromFile, "Viewpoint file"},
+        {(uint32_t)ViewpointGeneration::FromScenePath, "Scene path"}
+    };
 };

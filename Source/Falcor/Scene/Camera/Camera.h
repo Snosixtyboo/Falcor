@@ -236,6 +236,11 @@ namespace Falcor
 
         void updateFromAnimation(const glm::mat4& transform) override;
 
+        void queueConfigs(std::queue<glm::mat4> configs)
+        {
+            queuedConfigs = configs;
+        }
+
         /** Render the UI
         */
         void renderUI(Gui::Widgets& widget);
@@ -267,6 +272,8 @@ namespace Falcor
     private:
         Camera();
         Changes mChanges = Changes::None;
+
+        std::queue<glm::mat4> queuedConfigs;
 
         mutable bool mDirty = true;
         mutable bool mEnablePersistentProjMat = false;

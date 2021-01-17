@@ -27,6 +27,7 @@
  **************************************************************************/
 #include "ExampleBlitPass.h"
 #include <filesystem>
+#include <string>
 
 const ChannelList ExampleBlitPass::kGBufferChannels =
 {
@@ -172,8 +173,24 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
         mpPass->execute(pRenderContext, mpFbo);
 
         if (capturing) {
-            if (clock() - lastCaptureTime > captureInterval)
+            if (viewpointMethod != ViewpointGeneration::FromScenePath || clock() - lastCaptureTime > captureInterval)
             {
+                if (viewpointMethod == ViewpointGeneration::FromFile)
+                {
+                    viewPointToCapture++;
+                    if (viewPointToCapture == 1)
+                    {
+                        mpScene->getCamera()->queueConfigs(camMatrices);
+                        return;
+                    }
+                    else
+                    {
+                        if (viewPointToCapture > camMatrices.size()) // first iteration, camera will only be applied next round
+                        {
+                            capturing = false;
+                        }
+                    }
+                }
                 dumpFormat = Falcor::Bitmap::FileFormat::ExrFile;
                 std::string fileEnding = dumpFormat == Falcor::Bitmap::FileFormat::PngFile ? ".png" : ".exr";
 
@@ -223,17 +240,79 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
 
                 lastCaptureTime = clock();
                 framesCaptured++;
+
+                commandList5->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
             }
+        } 
+    }
+}
+
+void ExampleBlitPass::loadViewPoints()
+{
+    std::string filename;
+    FileDialogFilterVec filters = { {"cfg", "txt"} };
+    if (openFileDialog(filters, filename))
+    {
+        std::ifstream infile(filename, std::ios_base::in);
+        if (!infile.good())
+        {
+            logError("Failed to open file: " + filename, Logger::MsgBox::ContinueAbort);
+            return;
         }
 
-        commandList5->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
+        camMatrices = std::queue<glm::mat4x4>();
+
+        std::string line;
+        while (std::getline(infile, line))
+        {
+            glm::mat4x4 mat;
+            std::stringstream ss(line);
+            for (int i = 0; i < 4; i++)
+            {
+                for (int j = 0; j < 4; j++)
+                {
+                    ss >> mat[j][i];
+                }
+            }
+            for (int j = 0; j < 4; j++)
+            {
+                float v = mat[j][1];
+                float w = mat[j][2];
+                mat[j][2] = -v;
+                mat[j][1] = w;
+            }
+            mat[2] = -mat[2]; // Apparently handedness mismatch with blender
+            camMatrices.push(mat);
+        }
     }
 }
 
 void ExampleBlitPass::renderUI(Gui::Widgets& widget)
 {
     // Capturing control
+    if (mpScene && mpScene->getCamera()->hasAnimation())
+    {
+        widget.dropdown("Viewpoint Generation", viewpointList, (uint32_t&)viewpointMethod);
+    }
+
+    if (viewpointMethod == ViewpointGeneration::FromFile)
+    {
+        if (widget.button("Load Viewpoints")) { loadViewPoints(); }
+    }
+    else
+    {
+        widget.var("Capture interval (ms)", captureInterval);
+    }
+
     widget.textbox("Directory for captured images", targetDir);
-    widget.var("Capture interval (ms)", captureInterval);
-    capturing = capturing ? !widget.button("Stop capturing") : widget.button("Start capturing");
+
+    if (!capturing && widget.button("Start capturing"))
+    {
+        viewPointToCapture = 0;
+        capturing = true;
+    }
+    else if (capturing && widget.button("Stop capturing"))
+    {
+        capturing = false;
+    }
 }

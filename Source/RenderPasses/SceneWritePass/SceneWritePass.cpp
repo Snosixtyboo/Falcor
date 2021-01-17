@@ -178,7 +178,7 @@ void SceneWritePass::execute(RenderContext* pContext, const RenderData& renderDa
                 for (long long unsigned int j = 0; j < 3; j++)
                 {
                     long long unsigned int base = (i + j) * 3;
-                    float3 xyz = { dumped[base + 0] , dumped[base + 2], -dumped[base + 1] };
+                    float3 xyz = { dumped[base + 0] , -dumped[base + 2], dumped[base + 1] };
                     outfile.write((const char*)&xyz, sizeof(xyz));
                 }
             }
@@ -192,7 +192,7 @@ void SceneWritePass::execute(RenderContext* pContext, const RenderData& renderDa
 
             std::cout << "******************************************************************" << std::endl;
             std::cout << "\tWrote scene geometry to file \"" << outFileName << "\", ending" << std::endl;
-            std::cout << "\tNote: y = z, z = -y to facilitate editing in Blender" << std::endl;
+            std::cout << "\tNote: y = -z, z = y to facilitate editing in Blender" << std::endl;
             std::cout << "\tBlender tool must flip them back when it's done :)" << std::endl;
             std::cout << "******************************************************************" << std::endl;
             exit(0);
