@@ -177,7 +177,7 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
 
             if (clock() - lastCaptureTime > (captureInterval * antiBias))
             {
-                dumpFormat = Falcor::Bitmap::FileFormat::ExrFile;
+                dumpFormat = Falcor::Bitmap::FileFormat::PfmFile;
                 std::string fileEnding;
 
                 if (dumpFormat == Falcor::Bitmap::FileFormat::PngFile)
