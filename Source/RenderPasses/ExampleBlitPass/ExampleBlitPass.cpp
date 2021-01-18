@@ -28,6 +28,7 @@
 #include "ExampleBlitPass.h"
 #include <filesystem>
 #include <string>
+#include <cstdlib>
 
 const ChannelList ExampleBlitPass::kGBufferChannels =
 {
@@ -36,8 +37,8 @@ const ChannelList ExampleBlitPass::kGBufferChannels =
     { "normW",          "gNormW",           "world space normal",           true /* optional */, ResourceFormat::RGBA32Float },
     { "tangentW",       "gTangentW",        "world space tangent",          true /* optional */, ResourceFormat::RGBA32Float },
     { "texC",           "gTexC",            "texture coordinates",          true /* optional */, ResourceFormat::RGBA32Float },
-    { "diffuseOpacity", "gDiffuseOpacity",  "diffuse color and opacity",    true /* optional */, ResourceFormat::RGBA32Float },
-    { "specRough",      "gSpecRough",       "specular color and roughness", true /* optional */, ResourceFormat::RGBA32Float },
+    { "diffuseOpacity", "gDiffuseOpacity",  "diffuse color",                true /* optional */, ResourceFormat::RGBA32Float },
+    { "specRough",      "gSpecRough",       "specular color",               true /* optional */, ResourceFormat::RGBA32Float },
     { "emissive",       "gEmissive",        "emissive color",               true /* optional */, ResourceFormat::RGBA32Float },
     { "matlExtra",      "gMatlExtra",       "additional material data",     true /* optional */, ResourceFormat::RGBA32Float },
 };
@@ -173,29 +174,39 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
         mpPass->execute(pRenderContext, mpFbo);
 
         if (capturing) {
-            if (viewpointMethod != ViewpointGeneration::FromScenePath || clock() - lastCaptureTime > captureInterval)
-            {
-                if (viewpointMethod == ViewpointGeneration::FromFile)
-                {
+            float antiBias = 0.9f + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.2f)));
+
+            if (viewpointMethod != ViewpointGeneration::FromScenePath || clock() - lastCaptureTime > (captureInterval * antiBias)) {
+                if (viewpointMethod == ViewpointGeneration::FromFile) {
                     viewPointToCapture++;
-                    if (viewPointToCapture == 1)
-                    {
+
+                    if (viewPointToCapture == 1) {
                         mpScene->getCamera()->queueConfigs(camMatrices);
                         return;
-                    }
-                    else
-                    {
-                        if (viewPointToCapture > camMatrices.size()) // first iteration, camera will only be applied next round
-                        {
+                    } else {
+                        if (viewPointToCapture > camMatrices.size()) { // first iteration, camera will only be applied next round
                             capturing = false;
                         }
                     }
                 }
-                dumpFormat = Falcor::Bitmap::FileFormat::ExrFile;
-                std::string fileEnding = dumpFormat == Falcor::Bitmap::FileFormat::PngFile ? ".png" : ".exr";
+                
+                dumpFormat = Falcor::Bitmap::FileFormat::PfmFile;
+                std::string fileEnding;
+
+                if (dumpFormat == Falcor::Bitmap::FileFormat::PngFile)
+                    fileEnding = ".png";
+                else if (dumpFormat == Falcor::Bitmap::FileFormat::JpegFile)
+                    fileEnding = ".jpg";
+                else if (dumpFormat == Falcor::Bitmap::FileFormat::TgaFile)
+                    fileEnding = ".tga";
+                else if (dumpFormat == Falcor::Bitmap::FileFormat::BmpFile)
+                    fileEnding = ".bmp";
+                else if (dumpFormat == Falcor::Bitmap::FileFormat::PfmFile)
+                    fileEnding = ".pfm";
+                else if (dumpFormat == Falcor::Bitmap::FileFormat::ExrFile)
+                    fileEnding = ".exr";
 
                 std::filesystem::path targetPath(targetDir);
-
                 std::stringstream ss;
                 ss << std::setw(4) << std::setfill('0') << framesCaptured;
                 std::string capturedStr = ss.str();
@@ -226,12 +237,12 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
                 viewDirsOut->captureToFile(0, 0, viewFile.string(), dumpFormat);
                 viewNormalsOut->captureToFile(0, 0, normalFile.string(), dumpFormat);
                 roughOpacOut->captureToFile(0, 0, roughOpacFile.string(), dumpFormat);
-                
+
                 for (int i = 0; i < sizeof(dumpRates)/sizeof(dumpRates[0]); i++)
                 {
                     commandList5->RSSetShadingRate(dumpRates[i], nullptr);
                     mpPass->execute(pRenderContext, mpFbo);
-                    std::filesystem::path outputFile = targetPath / ("output_" + dumpRateNames[i] + ".exr");
+                    std::filesystem::path outputFile = targetPath / ("output_" + dumpRateNames[i] + fileEnding);
                     output->captureToFile(0, 0, outputFile.string(), dumpFormat);
                 }
 
@@ -243,7 +254,7 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
 
                 commandList5->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
             }
-        } 
+        }
     }
 }
 
