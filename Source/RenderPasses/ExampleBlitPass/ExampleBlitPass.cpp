@@ -69,6 +69,19 @@ ExampleBlitPass::ExampleBlitPass()
     mpVars = GraphicsVars::create(mpPass->getProgram()->getReflector());
     ParameterBlockReflection::SharedConstPtr pReflection = mpPass->getProgram()->getReflector()->getParameterBlock("tScene");
     mpSceneBlock = ParameterBlock::create(pReflection);
+
+    if (dumpFormat == Falcor::Bitmap::FileFormat::PngFile)
+        fileEnding = ".png";
+    else if (dumpFormat == Falcor::Bitmap::FileFormat::JpegFile)
+        fileEnding = ".jpg";
+    else if (dumpFormat == Falcor::Bitmap::FileFormat::TgaFile)
+        fileEnding = ".tga";
+    else if (dumpFormat == Falcor::Bitmap::FileFormat::BmpFile)
+        fileEnding = ".bmp";
+    else if (dumpFormat == Falcor::Bitmap::FileFormat::PfmFile)
+        fileEnding = ".pfm";
+    else if (dumpFormat == Falcor::Bitmap::FileFormat::ExrFile)
+        fileEnding = ".exr";
 }
 
 
@@ -149,7 +162,6 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
     {
         // Cast to required command list
         d3d_call(pRenderContext->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&commandList5)));
-        // Set Shading Rate to 4x4 using ID3D12GraphicsCommandList5.
         commandList5->RSSetShadingRate(activeRate, nullptr);
 
         const auto& posW = renderData["posW"]->asTexture();
@@ -189,22 +201,6 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
                         }
                     }
                 }
-                
-                dumpFormat = Falcor::Bitmap::FileFormat::PfmFile;
-                std::string fileEnding;
-
-                if (dumpFormat == Falcor::Bitmap::FileFormat::PngFile)
-                    fileEnding = ".png";
-                else if (dumpFormat == Falcor::Bitmap::FileFormat::JpegFile)
-                    fileEnding = ".jpg";
-                else if (dumpFormat == Falcor::Bitmap::FileFormat::TgaFile)
-                    fileEnding = ".tga";
-                else if (dumpFormat == Falcor::Bitmap::FileFormat::BmpFile)
-                    fileEnding = ".bmp";
-                else if (dumpFormat == Falcor::Bitmap::FileFormat::PfmFile)
-                    fileEnding = ".pfm";
-                else if (dumpFormat == Falcor::Bitmap::FileFormat::ExrFile)
-                    fileEnding = ".exr";
 
                 std::filesystem::path targetPath(targetDir);
                 std::stringstream ss;
