@@ -1,14 +1,15 @@
-import bpy
+from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from bpy.props import PointerProperty
-import mathutils
+from random import random
+from math import radians
+from random import seed
+
 import numpy as np
+import threading
+import mathutils
 import bmesh
 import time
-import threading
-from math import radians
-from bpy_extras.object_utils import AddObjectHelper, object_data_add
-from random import seed
-from random import random
+import bpy
 
 sceneBVH = None
 marcherWorld = None
@@ -19,18 +20,16 @@ BVHTree = mathutils.bvhtree.BVHTree
 helperCam = None
 verified = set()
 
-
 def sceneIntersects(obj, delta):
     bm1 = bmesh.new()
-    bm1.from_mesh(obj.data) 
-    bm1.transform(mathutils.Matrix.Translation(delta) @ obj.matrix_basis) 
+    bm1.from_mesh(obj.data)
+    bm1.transform(mathutils.Matrix.Translation(delta) @ obj.matrix_basis)
     objBVH = BVHTree.FromBMesh(bm1)
     inter = objBVH.overlap(sceneBVH)
     bm1.free()
     if inter != []:
         return True
     return False
-
 
 def marcherFits(context, offset):
     for inv in domainWorldInvs:
@@ -40,7 +39,7 @@ def marcherFits(context, offset):
             pointDomain = inv @ mathutils.Vector((point.x, point.y, point.z))
 
             if (
-                pointDomain.x > 1 or 
+                pointDomain.x > 1 or
                 pointDomain.y > 1 or
                 pointDomain.z > 1 or
                 pointDomain.x < -1 or
@@ -52,7 +51,6 @@ def marcherFits(context, offset):
         if inside:
             return True
     return False
-
 
 def DFSFill(context):
     visited = set()
@@ -78,46 +76,43 @@ def DFSFill(context):
                             copyobj = bpy.context.scene.marchProp.copy()
                             copyobj.location = testPosW
                             bpy.context.scene.fillersProp.objects.link(copyobj)
-        
+
 def clearFillers():
     if bpy.context.scene.fillersProp:
         for obj in bpy.context.scene.fillersProp.objects:
             bpy.data.objects.remove(obj)
 
-   
 def clearViewpoints():
     if bpy.context.scene.camLocsProp:
         for obj in bpy.context.scene.camLocsProp.objects:
             bpy.data.objects.remove(obj)
 
-
 def march(context):
     global marcherWorld
     marcherWorld = bpy.context.scene.marchProp.matrix_world
-    
+
     global marcherBBWorld
-    marcherBBWorld = [marcherWorld @ mathutils.Vector(bbvert) for bbvert in bpy.context.scene.marchProp.bound_box]    
-    
+    marcherBBWorld = [marcherWorld @ mathutils.Vector(bbvert) for bbvert in bpy.context.scene.marchProp.bound_box]
+
     global domainWorldInvs
     domainWorldInvs = []
     for domainObj in bpy.context.scene.domainProp.objects:
         inv = domainObj.matrix_world.copy()
         inv.invert()
         domainWorldInvs.append(inv)
-        
+
     global sceneBVH
     bm1 = bmesh.new()
     bm1.from_mesh(bpy.context.scene.sceneProp.data)
     bm1.transform(bpy.context.scene.sceneProp.matrix_world)
-    sceneBVH = BVHTree.FromBMesh(bm1)  
+    sceneBVH = BVHTree.FromBMesh(bm1)
     bm1.free()
-    
+
     global possibleLocations
     possibleLocations = []
-    
+
     clearFillers()
     DFSFill(context)
-
 
 def makeOrGetBrightGreen():
     mat = bpy.data.materials.get("CamGreen")
@@ -131,8 +126,7 @@ def makeOrGetBrightGreen():
         node_output = nodes.new(type="ShaderNodeOutputMaterial")
         links = mat.node_tree.links
         links.new(node_emission.outputs[0], node_output.inputs[0])
-    return mat    
-
+    return mat
 
 def checkImage():
     # render
@@ -143,12 +137,12 @@ def checkImage():
     arr = np.array(pixels[:])
     arr = np.reshape(arr, (-1, 4))
     num_samples = np.count_nonzero(arr[:,3])
-    
+
     print(100*num_samples/(len(pixels)/4))
     if (100*num_samples/(len(pixels)/4)) < bpy.context.scene.minForegroundProp:
         return False
     return True
- 
+
 def selectUnverified():
     print(len(verified))
     for obj in bpy.context.selected_objects:
@@ -158,7 +152,7 @@ def selectUnverified():
         r = cam.rotation_euler
         if (t.x, t.y, t.z, r.x, r.y, r.z) not in verified:
             cam.select_set(True)
-            
+
 def verifyObjects(objs):
     global helperCam
     if helperCam is None:
@@ -187,43 +181,42 @@ def verifyObjects(objs):
     for n in tree.nodes:
         tree.nodes.remove(n)
     # create input render layer node
-    rl = tree.nodes.new('CompositorNodeRLayers')      
+    rl = tree.nodes.new('CompositorNodeRLayers')
     rl.location = 185,285
-    v = tree.nodes.new('CompositorNodeViewer')   
+    v = tree.nodes.new('CompositorNodeViewer')
     v.location = 750,210
     links.new(rl.outputs[0], v.inputs[0])  # link Image output to Viewer input
-    
-    allGood = True    
-        
+
+    allGood = True
+
     for obj in objs:
         helperCam.location = obj.location
         helperCam.rotation_euler = obj.rotation_euler
-        
+
         if not checkImage():
             print("Rejecting view due to lack of foreground geometry")
             allGood = False
             continue
-        
+
         if sceneIntersects(obj, mathutils.Vector((0,0,0))):
             print("Rejecting view due to intersection with scene!")
             allGood = False
             continue
-        
+
         t = helperCam.location
         r = helperCam.rotation_euler
         verified.add((t.x, t.y, t.z, r.x, r.y, r.z))
-        
+
     return allGood
-    
+
 def generateViews(numViews, reset, checked):
-    
     if reset:
         #Remove existing cams
         clearViewpoints()
         #Init seed
         seed(bpy.context.scene.randSeedProp)
         #Generate and test views
-    
+
     viewsMade = 0
     while viewsMade < numViews:
         print("Making view ", viewsMade, "/", numViews)
@@ -239,20 +232,20 @@ def generateViews(numViews, reset, checked):
         testRotation[2] += radians(random() * (
             bpy.context.scene.yawMaxProp - bpy.context.scene.yawMinProp
         ) + bpy.context.scene.yawMinProp)
-            
-        
+
+
         copyobj = bpy.context.scene.camProp.copy()
         copyobj.location = testLocation
         copyobj.rotation_euler = testRotation
-        
+
         if checked and not verifyObjects([copyobj,]):
             bpy.data.objects.remove(copyobj)
             continue
-        
+
         bpy.context.scene.camLocsProp.objects.link(copyobj)
         copyobj.select_set(True)
         viewsMade += 1
-        
+
 class FixSelectedOperator(bpy.types.Operator):
     """Fix selected viewpoints"""
     bl_idname = "object.fix_selected"
@@ -274,7 +267,7 @@ class FixSelectedOperator(bpy.types.Operator):
             bpy.data.objects.remove(obj)
         generateViews(toFix, reset=False, checked=True)
         return {'FINISHED'}
-        
+
 class VerifySelectedOperator(bpy.types.Operator):
     """Verify selected objects as viewpoints"""
     bl_idname = "object.verify_selected"
@@ -300,7 +293,7 @@ class SelectUnverifiedOperator(bpy.types.Operator):
     def execute(self, context):
         selectUnverified()
         return {'FINISHED'}
-    
+
 class ClearVerificationOperator(bpy.types.Operator):
     """Remove cached verification data"""
     bl_idname = "object.clear_verification"
@@ -360,7 +353,7 @@ class MarchingOperator(bpy.types.Operator):
         march(context)
         return {'FINISHED'}
 
-    
+
 class ViewGenOperator(bpy.types.Operator):
     """Start view generation procedure"""
     bl_idname = "object.viewgen_operator"
@@ -379,7 +372,7 @@ class ViewGenOperator(bpy.types.Operator):
         generateViews(bpy.context.scene.numViewsProp, reset=True, checked=False)
         return {'FINISHED'}
 
-    
+
 class MakeDefaultCamOperator(bpy.types.Operator, AddObjectHelper):
     """Default Cam"""
     bl_idname = "object.make_default_cam"
@@ -400,7 +393,7 @@ class MakeDefaultCamOperator(bpy.types.Operator, AddObjectHelper):
 
         edges = []
         faces = [[0,1,2],[0,2,4],[0,3,1],[0,4,3],[1,3,2],[2,3,4]]
-        
+
         mesh = bpy.data.meshes.new('cam_mesh')
         mesh.from_pydata(verts, edges, faces)
 
@@ -410,9 +403,9 @@ class MakeDefaultCamOperator(bpy.types.Operator, AddObjectHelper):
         obj.data.materials.append(makeOrGetBrightGreen())
 
         bpy.context.scene.camProp = obj
-        
+
         return {'FINISHED'}
-    
+
 class WriteCamFileOperator(bpy.types.Operator, AddObjectHelper):
     """Default Cam"""
     bl_idname = "object.write_cam_file"
@@ -434,7 +427,7 @@ class WriteCamFileOperator(bpy.types.Operator, AddObjectHelper):
             for i in range(0, 4):
                 for j in range(0, 4):
                     file.write(str(m[i][j]) + " ")
-        
+
         return {'FINISHED'}
 
 
@@ -448,24 +441,24 @@ class AUTOVIEW_PT_layout_panel(bpy.types.Panel):
     def draw(self, context):
         scene = context.scene
         layout = self.layout
-        
-        col = layout.column() 
+
+        col = layout.column()
         col.prop(scene, "sceneProp", text="Scene")
         col.prop(scene, "domainProp", text="Domain")
         col.prop(scene, "marchProp", text="Marcher")
         col.prop(scene, "fillersProp", text="Fillers")
         col.operator("object.clear_fillers_operator")
         col.operator("object.marching_operator")
-        
+
         col = layout.column()
         col.label(text="Viewpoint Indicator Geometry:")
         row = layout.row(align=True)
         row.operator("object.make_default_cam")
         row.prop(scene, "camProp", text="")
-        
+
         col = layout.column()
         col.label(text="Viewpoint Angle Variation:")
-        
+
         row = layout.row(align=True)
         row.label(text="Yaw:")
         row.prop(scene, "yawMinProp", text="")
@@ -478,20 +471,20 @@ class AUTOVIEW_PT_layout_panel(bpy.types.Panel):
         row.label(text="Roll:")
         row.prop(scene, "rollMinProp", text="")
         row.prop(scene, "rollMaxProp", text="")
-        
+
         row = layout.row(align=True)
         row.label(text="Number Views:")
         row.prop(scene, "numViewsProp", text="#Views")
         row = layout.row(align=True)
         row.label(text="Random Seed:")
         row.prop(scene, "randSeedProp", text="")
-        
-        col = layout.column() 
+
+        col = layout.column()
         col.label(text="Viewpoint Generation:")
         col.prop(scene, "camLocsProp", text="Result")
         col.operator("object.clear_cams_operator")
         col.operator("object.viewgen_operator")
-        
+
         col.label(text="Viewpoint Verification:")
         row = layout.row(align=True)
         row.label(text="Resolution:")
@@ -500,13 +493,13 @@ class AUTOVIEW_PT_layout_panel(bpy.types.Panel):
         row = layout.row(align=True)
         row.label(text="Min. Foreground:")
         row.prop(scene, "minForegroundProp", text="")
-        
-        col = layout.column() 
+
+        col = layout.column()
         col.operator("object.clear_verification")
         col.operator("object.select_unverified")
         col.operator("object.verify_selected")
         col.operator("object.fix_selected")
-        
+
         col.label(text="Output:")
         col.prop(scene, "outFileProp", text="Path")
         col.operator("object.write_cam_file")
@@ -550,6 +543,6 @@ def unregister():
     bpy.utils.unregister_class(MakeDefaultCamOperator)
     bpy.utils.unregister_class(ClearCamsOperator)
 
-   
+
 if __name__ == "__main__":
     register()
