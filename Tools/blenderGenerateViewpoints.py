@@ -65,6 +65,9 @@ def marcherFits(context, offset, domainWorldInvs, marcherBBWorld):
 def DFSFill(context, domainWorldInvs, marcherWorld, marcherBBWorld):
     visited = set()
     coordsToDO = [mathutils.Vector((0,0,0))]
+    
+    vertices = []
+    
     while len(coordsToDO) != 0:
         coords = coordsToDO.pop(0)
         for i in range(3):
@@ -84,9 +87,34 @@ def DFSFill(context, domainWorldInvs, marcherWorld, marcherBBWorld):
                         newLoc = bpy.context.scene.possibleLocations.add()
                         newLoc.location = testPosW
                         if bpy.context.scene.fillersProp:
-                            copyobj = bpy.context.scene.marchProp.copy()
-                            copyobj.location = testPosW
-                            bpy.context.scene.fillersProp.objects.link(copyobj)
+                            #copyobj = bpy.context.scene.marchProp.copy()
+                            #copyobj.location = testPosW
+                            #bpy.context.scene.fillersProp.objects.link(copyobj)
+                            vertices.append(testPosW)
+                          
+    # Create new mesh and a new object
+    me = bpy.data.meshes.new("FillerMesh")
+    ob = bpy.data.objects.new("FillerObj", me)
+
+    # Make a mesh from a list of vertices/edges/faces
+    me.from_pydata(vertices, [], [])
+
+    # Display name and update the mesh
+    me.update()
+    
+    copyobj = bpy.context.scene.marchProp.copy()
+    copyobj.location = (0,0,0)
+    copyobj.parent = ob
+
+    ob.hide_render = True
+    copyobj.hide_render = True
+    ob.show_instancer_for_viewport = False
+    ob.show_instancer_for_render = False
+
+    bpy.context.scene.fillersProp.objects.link(ob)
+    bpy.context.scene.fillersProp.objects.link(copyobj)
+    ob.instance_type = 'VERTS'
+
         
 def clearFillers():
     if bpy.context.scene.possibleLocations:
@@ -614,8 +642,8 @@ def register():
     bpy.types.Scene.possibleLocations = bpy.props.CollectionProperty(type=PossibleLocGroup)
     bpy.types.Scene.verifiedOrientations = bpy.props.CollectionProperty(type=VerifiedOrientationGroup)
     bpy.types.Scene.remoteRenderProp = bpy.props.BoolProperty()
-    bpy.types.Scene.remoteRenderIP = bpy.props.StringProperty()
-    bpy.types.Scene.remoteRenderPort = bpy.props.IntProperty()
+    bpy.types.Scene.remoteRenderIP = bpy.props.StringProperty(default="localhost")
+    bpy.types.Scene.remoteRenderPort = bpy.props.IntProperty(default=4242)
     bpy.utils.register_class(AUTOVIEW_PT_layout_panel)
     bpy.utils.register_class(MarchingOperator)
     bpy.utils.register_class(ViewGenOperator)
@@ -627,6 +655,7 @@ def register():
     bpy.utils.register_class(VerifySelectedOperator)
     bpy.utils.register_class(FixSelectedOperator)
     bpy.utils.register_class(WriteCamFileOperator)
+    bpy.types.Scene.floodProp = PointerProperty(type=bpy.types.Object)
 
 def unregister():
     bpy.utils.unregister_class(AUTOVIEW_PT_layout_panel)
