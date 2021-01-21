@@ -318,10 +318,11 @@ namespace Falcor
     {
         for (auto& camera : mCameras)
         {
-            if (camera->getFarPlane() / camera->getNearPlane() > 1000)
-            {
-                camera->setNearPlane(camera->getFarPlane() / 1000);
-            }
+            //while (camera->getFarPlane() / camera->getNearPlane() > 1000)
+            //{
+            //    camera->setFarPlane(camera->getFarPlane() / 2);
+            //    camera->setNearPlane(camera->getNearPlane() * 10);
+            //}
             updateAnimatable(*camera, *mpAnimationController, true);
             camera->beginFrame();
         }
@@ -1669,6 +1670,11 @@ namespace Falcor
 
         // Camera speed.
         c += Scripting::makeSetProperty(sceneVar, kCameraSpeed, mCameraSpeed);
+
+        for (size_t i = 0; i < mLights.size(); i++)
+        {
+            c += mLights[i]->getScript(sceneVar + "." + kGetLight + "(" + std::to_string(i) + ")");
+        }
 
         // Viewpoints.
         if (hasSavedViewpoints())

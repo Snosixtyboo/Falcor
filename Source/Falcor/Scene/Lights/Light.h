@@ -43,6 +43,8 @@ namespace Falcor
 
         virtual ~Light() = default;
 
+        std::string getScript(const std::string& lightVar);
+
         /** Set the light parameters into a shader variable. To use this you need to include/import 'ShaderCommon' inside your shader.
         */
         virtual void setShaderData(const ShaderVar& var);

@@ -56,6 +56,15 @@ namespace Falcor
         mData.intensity = intensity;
     }
 
+    std::string Light::getScript(const std::string& lightVar)
+    {
+        std::string c;
+
+        c += Scripting::makeSetProperty(lightVar, "active", isActive());
+
+        return c;
+    }
+
     Light::Changes Light::beginFrame()
     {
         mChanges = Changes::None;

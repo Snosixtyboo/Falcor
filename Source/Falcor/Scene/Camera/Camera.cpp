@@ -364,6 +364,9 @@ namespace Falcor
             c += Scripting::makeSetProperty(cameraVar, kUp, getUpVector());
         }
 
+        c += Scripting::makeSetProperty(cameraVar, "nearPlane", getNearPlane());
+        c += Scripting::makeSetProperty(cameraVar, "farPlane", getFarPlane());
+
         return c;
     }
 
