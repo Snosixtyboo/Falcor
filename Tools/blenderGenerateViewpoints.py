@@ -90,7 +90,7 @@ def DFSFill(context, domainWorldInvs, marcherWorld, marcherBBWorld):
                             #copyobj = bpy.context.scene.marchProp.copy()
                             #copyobj.location = testPosW
                             #bpy.context.scene.fillersProp.objects.link(copyobj)
-                            vertices.append(testPosW)
+                            vertices.append(delta)
                           
     # Create new mesh and a new object
     me = bpy.data.meshes.new("FillerMesh")
@@ -103,8 +103,11 @@ def DFSFill(context, domainWorldInvs, marcherWorld, marcherBBWorld):
     me.update()
     
     copyobj = bpy.context.scene.marchProp.copy()
-    copyobj.location = (0,0,0)
     copyobj.parent = ob
+    #ob.location = copyobj.location
+    #copyobj.location = (0,0,0)
+    
+    #ob.location = -copyobj.location
 
     ob.hide_render = True
     copyobj.hide_render = True
