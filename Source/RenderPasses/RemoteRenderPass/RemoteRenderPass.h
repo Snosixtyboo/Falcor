@@ -35,6 +35,10 @@ using namespace Falcor;
 class WSOrg
 {
 public:
+    int port = 4242;
+    sockaddr_in sockaddr;
+    SOCKET sockfd;
+    SOCKET connection;
     WSOrg();
     ~WSOrg();
 };
@@ -62,11 +66,9 @@ public:
 
     QueryHeap::SharedPtr occlusionHeap;
     Buffer::SharedPtr occlusionBuffer;
+    GpuFence::SharedPtr copyFence;
 
 private:
-    sockaddr_in sockaddr;
-    SOCKET sockfd;
-    SOCKET connection;
     WSOrg wsorg;
     bool capturing = false;
     int viewPointsToDo = 0;

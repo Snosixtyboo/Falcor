@@ -73,6 +73,34 @@ WSOrg::WSOrg()
         fprintf(stderr, "WSAStartup failed.\n");
         exit(1);
     }
+
+    // Create a socket (IPv4, TCP)
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd == INVALID_SOCKET) {
+        std::cout << "Failed to create socket. errno: " << errno << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // Listen to port 4242 on any address
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_addr.s_addr = INADDR_ANY;
+    sockaddr.sin_port = htons(port); // htons is necessary to convert a number to
+                                     // network byte order
+    if (bind(sockfd, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0) {
+        std::cout << "Failed to bind to port " << port << ". errno: " << errno << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    // Start listening. Hold at most 10 connections in the queue
+    if (listen(sockfd, 10) < 0) {
+        std::cout << "Failed to listen on socket. errno: " << errno << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    u_long iMode = 1;
+    auto iResult = ioctlsocket(sockfd, FIONBIO, &iMode); // Put socket in non-blocking mode
+    if (iResult != NO_ERROR)
+        printf("ioctlsocket failed with error: %ld\n", iResult);
 }
 
 WSOrg::~WSOrg()
@@ -110,7 +138,8 @@ RemoteRenderPass::RemoteRenderPass()
     setFilter((uint32_t)mFilter);
 
     occlusionHeap = QueryHeap::create(QueryHeap::Type::Occlusion, 1);
-    occlusionBuffer = Buffer::create(8);
+    occlusionBuffer = Buffer::create(8, Falcor::ResourceBindFlags::None, Falcor::Buffer::CpuAccess::Read);
+    copyFence = GpuFence::create();
 }
 
 RemoteRenderPass::SharedPtr RemoteRenderPass::create(RenderContext* pRenderContext, const Dictionary& dict)
@@ -173,9 +202,14 @@ void RemoteRenderPass::execute(RenderContext* pRenderContext, const RenderData& 
 
     // Resolve the occlusion query and store the results in the query result buffer
     // to be used on the subsequent frame.
-    //pRenderContext->resourceBarrier(occlusionBuffer.get(), Resource::State::CopyDest);
+    pRenderContext->resourceBarrier(occlusionBuffer.get(), Resource::State::CopyDest);
     pRenderContext->getLowLevelData()->getCommandList()->ResolveQueryData(occlusionHeap->getApiHandle(), D3D12_QUERY_TYPE_OCCLUSION, 0, 1, occlusionBuffer->getApiHandle(), 0);
-    //pRenderContext->resourceBarrier(occlusionBuffer.get(), Resource::State::CopySource);
+    pRenderContext->resourceBarrier(occlusionBuffer.get(), Resource::State::CopySource);
+
+    // Wait for GPU to finish writing and transitioning
+    pRenderContext->flush(false);
+    copyFence->gpuSignal(pRenderContext->getLowLevelData()->getCommandQueue());
+    copyFence->syncCpu();
 
     float sum = (float)(renderData[kTarget]->asTexture()->getHeight() * renderData[kTarget]->asTexture()->getWidth());
     unsigned long long int* queryRes = (unsigned long long int*)occlusionBuffer->map(Falcor::Buffer::MapType::Read);
@@ -191,18 +225,18 @@ void RemoteRenderPass::execute(RenderContext* pRenderContext, const RenderData& 
             int sent = 0;
             while (sent < (int)passed.size())
             {
-                sent += send(connection, passed.data() + sent, (int)passed.size() - sent, 0);
+                sent += send(wsorg.connection, passed.data() + sent, (int)passed.size() - sent, 0);
             }
             capturing = false;
-            closesocket(connection);
+            closesocket(wsorg.connection);
         }
     }
     else
     {
         // Grab a connection from the queue
         auto addrlen = sizeof(sockaddr);
-        connection = accept(sockfd, (struct sockaddr*)&sockaddr, (int*)&addrlen);
-        if (connection == INVALID_SOCKET) {
+        wsorg.connection = accept(wsorg.sockfd, (struct sockaddr*)&wsorg.sockaddr, (int*)&addrlen);
+        if (wsorg.connection == INVALID_SOCKET) {
             return;
         }
 
@@ -213,12 +247,17 @@ void RemoteRenderPass::execute(RenderContext* pRenderContext, const RenderData& 
             float threshold;
         } info;
 
-        while (recv(connection, (char*)&info, sizeof(info), MSG_PEEK) < (int)sizeof(info));
-        recv(connection, (char*)&info, sizeof(info), 0);
+        while (recv(wsorg.connection, (char*)&info, sizeof(info), MSG_PEEK) < (int)sizeof(info));
+        recv(wsorg.connection, (char*)&info, sizeof(info), 0);
 
         std::vector<glm::mat4> matrices(info.numCams);
-        while (recv(connection, (char*)matrices.data(), sizeof(glm::mat4) * info.numCams, MSG_PEEK) != sizeof(glm::mat4) * info.numCams);
-        recv(connection, (char*)matrices.data(), sizeof(glm::mat4) * info.numCams, 0);
+        while (recv(wsorg.connection, (char*)matrices.data(), sizeof(glm::mat4) * info.numCams, MSG_PEEK) != sizeof(glm::mat4) * info.numCams);
+        recv(wsorg.connection, (char*)matrices.data(), sizeof(glm::mat4) * info.numCams, 0);
+
+        if (info.numCams == 0)
+        {
+            return;
+        }
 
         // Convert blender coordinate system to Falcor
         for (int i = 0; i < matrices.size(); i++)
@@ -263,34 +302,6 @@ void RemoteRenderPass::setScene(RenderContext* pRenderContext, const Scene::Shar
         mpCubeScene->setCamera(mpScene->getCamera());
         if (mpScene->getEnvMap()) setTexture(mpScene->getEnvMap()->getEnvMap());
     }
-
-    // Create a socket (IPv4, TCP)
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd == INVALID_SOCKET) {
-        std::cout << "Failed to create socket. errno: " << errno << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Listen to port 4242 on any address
-    sockaddr.sin_family = AF_INET;
-    sockaddr.sin_addr.s_addr = INADDR_ANY;
-    sockaddr.sin_port = htons(4242); // htons is necessary to convert a number to
-                                     // network byte order
-    if (bind(sockfd, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0) {
-        std::cout << "Failed to bind to port 4242. errno: " << errno << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    // Start listening. Hold at most 10 connections in the queue
-    if (listen(sockfd, 10) < 0) {
-        std::cout << "Failed to listen on socket. errno: " << errno << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    u_long iMode = 1;
-    auto iResult = ioctlsocket(sockfd, FIONBIO, &iMode); // Put socket in non-blocking mode
-    if (iResult != NO_ERROR)
-        printf("ioctlsocket failed with error: %ld\n", iResult);
 }
 
 void RemoteRenderPass::renderUI(Gui::Widgets& widget)
