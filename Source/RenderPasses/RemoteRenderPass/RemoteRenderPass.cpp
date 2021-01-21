@@ -66,7 +66,14 @@ namespace
 }
 
 WSOrg::WSOrg()
-{}
+{
+    // Socket
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(1, 1), &wsaData) != 0) {
+        fprintf(stderr, "WSAStartup failed.\n");
+        exit(1);
+    }
+}
 
 WSOrg::~WSOrg()
 {
@@ -255,13 +262,6 @@ void RemoteRenderPass::setScene(RenderContext* pRenderContext, const Scene::Shar
     {
         mpCubeScene->setCamera(mpScene->getCamera());
         if (mpScene->getEnvMap()) setTexture(mpScene->getEnvMap()->getEnvMap());
-    }
-
-    // Socket
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(1, 1), &wsaData) != 0) {
-        fprintf(stderr, "WSAStartup failed.\n");
-        exit(1);
     }
 
     // Create a socket (IPv4, TCP)
