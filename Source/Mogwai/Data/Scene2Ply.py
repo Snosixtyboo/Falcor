@@ -17,7 +17,7 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('SkyBox.dll')
     loadRenderPassLibrary('ToneMapper.dll')
     loadRenderPassLibrary('Utils.dll')
-    SceneWritePass = createPass('SceneWritePass', {'depthFormat': ResourceFormat.D32Float})
+    SceneWritePass = createPass('SceneWritePass', {'depthFormat': ResourceFormat.D32Float, 'outFile': '../../../out.ply'})
     g.addPass(SceneWritePass, 'SceneWritePass')
     g.markOutput('SceneWritePass.depth')
     return g

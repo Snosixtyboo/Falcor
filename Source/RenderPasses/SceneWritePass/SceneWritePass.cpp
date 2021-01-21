@@ -1,33 +1,4 @@
-/***************************************************************************
- # Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
- #
- # Redistribution and use in source and binary forms, with or without
- # modification, are permitted provided that the following conditions
- # are met:
- #  * Redistributions of source code must retain the above copyright
- #    notice, this list of conditions and the following disclaimer.
- #  * Redistributions in binary form must reproduce the above copyright
- #    notice, this list of conditions and the following disclaimer in the
- #    documentation and/or other materials provided with the distribution.
- #  * Neither the name of NVIDIA CORPORATION nor the names of its
- #    contributors may be used to endorse or promote products derived
- #    from this software without specific prior written permission.
- #
- # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS "AS IS" AND ANY
- # EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- # PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- # CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- # EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- # PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- # PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- # OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- **************************************************************************/
 #include "SceneWritePass.h"
-
-const char* SceneWritePass::outFileName = "out.ply";
 
  // Don't remove this. it's required for hot-reload to function properly
 extern "C" __declspec(dllexport) const char* getProjDir()
@@ -37,7 +8,7 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary & lib)
 {
-    lib.registerClass("SceneWritePass", "Renders a depth buffer. Abuses it to output entrie scene with stream output.", SceneWritePass::create);
+    lib.registerClass("SceneWritePass", "Renders a depth buffer. Abuses it to output entire scene with stream output.", SceneWritePass::create);
 }
 
 const char* SceneWritePass::kDesc = "Creates a depth-buffer using the scene's active camera";
@@ -45,9 +16,9 @@ const char* SceneWritePass::kDesc = "Creates a depth-buffer using the scene's ac
 namespace
 {
     const std::string kProgramFile = "RenderPasses/DepthPass/DepthPass.ps.slang"; // No real shader needed, minimum will do
-
     const std::string kDepth = "depth";
     const std::string kDepthFormat = "depthFormat";
+    const std::string kOutFile = "outFile";
 }
 
 void SceneWritePass::parseDictionary(const Dictionary& dict)
@@ -55,6 +26,7 @@ void SceneWritePass::parseDictionary(const Dictionary& dict)
     for (const auto& [key, value] : dict)
     {
         if (key == kDepthFormat) setDepthBufferFormat(value);
+        else if (key == kOutFile) setWriteFilePath(value);
         else logWarning("Unknown field '" + key + "' in a SceneWritePass dictionary");
     }
 }
@@ -63,6 +35,7 @@ Dictionary SceneWritePass::getScriptingDictionary()
 {
     Dictionary d;
     d[kDepthFormat] = mDepthFormat;
+    d[kOutFile] = mOutFilePath;
     return d;
 }
 
@@ -163,7 +136,7 @@ void SceneWritePass::execute(RenderContext* pContext, const RenderData& renderDa
         std::map < float3, int, decltype(f)> seen(f);
         std::vector<float3> verts;
         {
-            std::ofstream outfile(std::string(outFileName), std::ios_base::out | std::ios_base::binary);
+            std::ofstream outfile(mOutFilePath, std::ios_base::out | std::ios_base::binary);
             outfile << "ply\n" << "format binary_little_endian 1.0\n" << "element vertex " << dumped.size() / 3 << "\n";
             outfile << ""
                 "property float x\n"
@@ -191,13 +164,19 @@ void SceneWritePass::execute(RenderContext* pContext, const RenderData& renderDa
             }
 
             std::cout << "******************************************************************" << std::endl;
-            std::cout << "\tWrote scene geometry to file \"" << outFileName << "\", ending" << std::endl;
+            std::cout << "\tWrote scene geometry to file \"" << mOutFilePath << "\", ending" << std::endl;
             std::cout << "\tNote: y = -z, z = y to facilitate editing in Blender" << std::endl;
             std::cout << "\tBlender tool must flip them back when it's done :)" << std::endl;
             std::cout << "******************************************************************" << std::endl;
             exit(0);
         }
     }
+}
+
+SceneWritePass& SceneWritePass::setWriteFilePath(std::string path)
+{
+    mOutFilePath = path;
+    return *this;
 }
 
 SceneWritePass& SceneWritePass::setDepthBufferFormat(ResourceFormat format)

@@ -1,33 +1,7 @@
-/***************************************************************************
- # Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
- #
- # Redistribution and use in source and binary forms, with or without
- # modification, are permitted provided that the following conditions
- # are met:
- #  * Redistributions of source code must retain the above copyright
- #    notice, this list of conditions and the following disclaimer.
- #  * Redistributions in binary form must reproduce the above copyright
- #    notice, this list of conditions and the following disclaimer in the
- #    documentation and/or other materials provided with the distribution.
- #  * Neither the name of NVIDIA CORPORATION nor the names of its
- #    contributors may be used to endorse or promote products derived
- #    from this software without specific prior written permission.
- #
- # THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS "AS IS" AND ANY
- # EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- # IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
- # PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
- # CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- # EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- # PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- # PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
- # OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- **************************************************************************/
 #include "ExampleBlitPass.h"
 #include <filesystem>
 #include <string>
+#include <cstdlib>
 
 const ChannelList ExampleBlitPass::kGBufferChannels =
 {
@@ -36,8 +10,8 @@ const ChannelList ExampleBlitPass::kGBufferChannels =
     { "normW",          "gNormW",           "world space normal",           true /* optional */, ResourceFormat::RGBA32Float },
     { "tangentW",       "gTangentW",        "world space tangent",          true /* optional */, ResourceFormat::RGBA32Float },
     { "texC",           "gTexC",            "texture coordinates",          true /* optional */, ResourceFormat::RGBA32Float },
-    { "diffuseOpacity", "gDiffuseOpacity",  "diffuse color and opacity",    true /* optional */, ResourceFormat::RGBA32Float },
-    { "specRough",      "gSpecRough",       "specular color and roughness", true /* optional */, ResourceFormat::RGBA32Float },
+    { "diffuseOpacity", "gDiffuseOpacity",  "diffuse color",                true /* optional */, ResourceFormat::RGBA32Float },
+    { "specRough",      "gSpecRough",       "specular color",               true /* optional */, ResourceFormat::RGBA32Float },
     { "emissive",       "gEmissive",        "emissive color",               true /* optional */, ResourceFormat::RGBA32Float },
     { "matlExtra",      "gMatlExtra",       "additional material data",     true /* optional */, ResourceFormat::RGBA32Float },
 };
@@ -54,7 +28,7 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
-    lib.registerClass("ExampleBlitPass", "Blits a texture into another texture", ExampleBlitPass::create);
+    lib.registerClass("ExampleBlitPass", "Write render buffers to image files.", ExampleBlitPass::create);
 }
 
 ExampleBlitPass::ExampleBlitPass()
@@ -68,6 +42,19 @@ ExampleBlitPass::ExampleBlitPass()
     mpVars = GraphicsVars::create(mpPass->getProgram()->getReflector());
     ParameterBlockReflection::SharedConstPtr pReflection = mpPass->getProgram()->getReflector()->getParameterBlock("tScene");
     mpSceneBlock = ParameterBlock::create(pReflection);
+
+    if (dumpFormat == Falcor::Bitmap::FileFormat::PngFile)
+        fileEnding = ".png";
+    else if (dumpFormat == Falcor::Bitmap::FileFormat::JpegFile)
+        fileEnding = ".jpg";
+    else if (dumpFormat == Falcor::Bitmap::FileFormat::TgaFile)
+        fileEnding = ".tga";
+    else if (dumpFormat == Falcor::Bitmap::FileFormat::BmpFile)
+        fileEnding = ".bmp";
+    else if (dumpFormat == Falcor::Bitmap::FileFormat::PfmFile)
+        fileEnding = ".pfm";
+    else if (dumpFormat == Falcor::Bitmap::FileFormat::ExrFile)
+        fileEnding = ".exr";
 }
 
 
@@ -148,7 +135,6 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
     {
         // Cast to required command list
         d3d_call(pRenderContext->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&commandList5)));
-        // Set Shading Rate to 4x4 using ID3D12GraphicsCommandList5.
         commandList5->RSSetShadingRate(activeRate, nullptr);
 
         const auto& posW = renderData["posW"]->asTexture();
@@ -173,29 +159,23 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
         mpPass->execute(pRenderContext, mpFbo);
 
         if (capturing) {
-            if (viewpointMethod != ViewpointGeneration::FromScenePath || clock() - lastCaptureTime > captureInterval)
-            {
-                if (viewpointMethod == ViewpointGeneration::FromFile)
-                {
+            float antiBias = 0.9f + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.2f)));
+
+            if (viewpointMethod != ViewpointGeneration::FromScenePath || clock() - lastCaptureTime > (captureInterval * antiBias)) {
+                if (viewpointMethod == ViewpointGeneration::FromFile) {
                     viewPointToCapture++;
-                    if (viewPointToCapture == 1)
-                    {
+
+                    if (viewPointToCapture == 1) {
                         mpScene->getCamera()->queueConfigs(camMatrices);
                         return;
-                    }
-                    else
-                    {
-                        if (viewPointToCapture > camMatrices.size()) // first iteration, camera will only be applied next round
-                        {
+                    } else {
+                        if (viewPointToCapture > camMatrices.size()) { // first iteration, camera will only be applied next round
                             capturing = false;
                         }
                     }
                 }
-                dumpFormat = Falcor::Bitmap::FileFormat::ExrFile;
-                std::string fileEnding = dumpFormat == Falcor::Bitmap::FileFormat::PngFile ? ".png" : ".exr";
 
                 std::filesystem::path targetPath(targetDir);
-
                 std::stringstream ss;
                 ss << std::setw(4) << std::setfill('0') << framesCaptured;
                 std::string capturedStr = ss.str();
@@ -226,12 +206,12 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
                 viewDirsOut->captureToFile(0, 0, viewFile.string(), dumpFormat);
                 viewNormalsOut->captureToFile(0, 0, normalFile.string(), dumpFormat);
                 roughOpacOut->captureToFile(0, 0, roughOpacFile.string(), dumpFormat);
-                
+
                 for (int i = 0; i < sizeof(dumpRates)/sizeof(dumpRates[0]); i++)
                 {
                     commandList5->RSSetShadingRate(dumpRates[i], nullptr);
                     mpPass->execute(pRenderContext, mpFbo);
-                    std::filesystem::path outputFile = targetPath / ("output_" + dumpRateNames[i] + ".exr");
+                    std::filesystem::path outputFile = targetPath / ("output_" + dumpRateNames[i] + fileEnding);
                     output->captureToFile(0, 0, outputFile.string(), dumpFormat);
                 }
 
@@ -243,7 +223,7 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
 
                 commandList5->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
             }
-        } 
+        }
     }
 }
 
