@@ -1,0 +1,35 @@
+from falcor import *
+
+def render_graph_DefaultRenderGraph():
+    g = RenderGraph('DefaultRenderGraph')
+    loadRenderPassLibrary('BSDFViewer.dll')
+    loadRenderPassLibrary('AccumulatePass.dll')
+    loadRenderPassLibrary('DepthPass.dll')
+    loadRenderPassLibrary('Antialiasing.dll')
+    loadRenderPassLibrary('FeedbackPass.dll')
+    loadRenderPassLibrary('BlitPass.dll')
+    loadRenderPassLibrary('CSM.dll')
+    loadRenderPassLibrary('ExampleBlitPass.dll')
+    loadRenderPassLibrary('ForwardLightingPass.dll')
+    loadRenderPassLibrary('GBuffer.dll')
+    loadRenderPassLibrary('RemoteRenderPass.dll')
+    loadRenderPassLibrary('SceneWritePass.dll')
+    loadRenderPassLibrary('SSAO.dll')
+    loadRenderPassLibrary('SkyBox.dll')
+    loadRenderPassLibrary('ToneMapper.dll')
+    loadRenderPassLibrary('Utils.dll')
+    RemoteRenderPass = createPass('RemoteRenderPass', {'texName': '', 'loadAsSrgb': True, 'filter': SamplerFilter.Linear})
+    g.addPass(RemoteRenderPass, 'RemoteRenderPass')
+    ForwardLightingPass = createPass('ForwardLightingPass', {'sampleCount': 1, 'enableSuperSampling': False})
+    g.addPass(ForwardLightingPass, 'ForwardLightingPass')
+    DepthPass = createPass('DepthPass', {'depthFormat': ResourceFormat.D32Float})
+    g.addPass(DepthPass, 'DepthPass')
+    g.addEdge('DepthPass.depth', 'ForwardLightingPass.depth')
+    g.addEdge('DepthPass.depth', 'RemoteRenderPass.depth')
+    g.addEdge('RemoteRenderPass.target', 'ForwardLightingPass.color')
+    g.markOutput('ForwardLightingPass.color')
+    return g
+
+DefaultRenderGraph = render_graph_DefaultRenderGraph()
+try: m.addGraph(DefaultRenderGraph)
+except NameError: None
