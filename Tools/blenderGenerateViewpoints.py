@@ -378,7 +378,7 @@ class ClearVerificationOperator(bpy.types.Operator):
 class ClearFillersOperator(bpy.types.Operator):
     """Clear fillers"""
     bl_idname = "object.clear_fillers_operator"
-    bl_label = "Clear fillers"
+    bl_label = "Clear flood"
 
     @classmethod
     def poll(cls, context):
@@ -517,7 +517,7 @@ class AUTOVIEW_PT_layout_panel(bpy.types.Panel):
         col.prop(scene, "sceneProp", text="Scene")
         col.prop(scene, "domainProp", text="Domain")
         col.prop(scene, "marchProp", text="Marcher")
-        col.prop(scene, "fillersProp", text="Fillers")
+        col.prop(scene, "fillersProp", text="Flood")
         col.operator("object.clear_fillers_operator")
         col.operator("object.marching_operator")
         
