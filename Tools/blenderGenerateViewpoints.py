@@ -196,11 +196,11 @@ def selectUnverified():
 
         cam.select_set(missing)
             
-def verifyObjects(objs):
+def verifyObjects(objs, sock):
     
     allGood = True 
     
-    if not bpy.context.scene.remoteRenderProp:
+    if sock is None:
         global helperCam
         if helperCam is None:
             cam1 = bpy.data.cameras.new("Camera 1")
@@ -235,9 +235,6 @@ def verifyObjects(objs):
         links.new(rl.outputs[0], v.inputs[0])  # link Image output to Viewer input   
     else:
         #print("Trying to connect to remote renderer")
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect((bpy.context.scene.remoteRenderIP, bpy.context.scene.remoteRenderPort)) 
-        
         data = struct.pack('<1i',len(objs))
         sock.sendall(data)
         
@@ -265,7 +262,7 @@ def verifyObjects(objs):
         else:
             intersection_verified.append(True)
         
-        if not bpy.context.scene.remoteRenderProp:
+        if sock is None:
             helperCam.location = obj.location
             helperCam.rotation_euler = obj.rotation_euler
             if not checkImage():
@@ -273,13 +270,12 @@ def verifyObjects(objs):
             else:
                 render_verified.append(1)
     
-    if bpy.context.scene.remoteRenderProp: 
+    if not sock is None:
         #print("Waiting for remote response...")
         while len(render_verified) < len(objs):
             #print(render_verified, len(objs))
             b = sock.recv(len(objs) - len(render_verified))
             render_verified = render_verified + list(b)
-        sock.close()
     
     #print(render_verified)
     #print(intersection_verified)
@@ -308,7 +304,7 @@ def verifyObjects(objs):
         
     return allGood
     
-def generateViews(numViews, reset, checked):
+def generateViews(numViews, reset, checked, sock):
     
     if reset:
         #Remove existing cams
@@ -337,7 +333,7 @@ def generateViews(numViews, reset, checked):
         copyobj.location = testLocation
         copyobj.rotation_euler = testRotation
         
-        if checked and not verifyObjects([copyobj,]):
+        if checked and not verifyObjects([copyobj,], sock):
             bpy.data.objects.remove(copyobj)
             continue
         
@@ -363,7 +359,13 @@ class FixSelectedOperator(bpy.types.Operator):
         toFix = len(bpy.context.selected_objects)
         for obj in bpy.context.selected_objects:
             bpy.data.objects.remove(obj)
-        generateViews(toFix, reset=False, checked=True)
+        remoteSock = None
+        if bpy.context.scene.remoteRenderProp: 
+            remoteSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            remoteSock.connect((bpy.context.scene.remoteRenderIP, bpy.context.scene.remoteRenderPort))
+        generateViews(toFix, reset=False, checked=True, sock=remoteSock)
+        if not remoteSock is None:
+            remoteSock.close()
         return {'FINISHED'}
         
 class VerifySelectedOperator(bpy.types.Operator):
@@ -376,7 +378,13 @@ class VerifySelectedOperator(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        verifyObjects(bpy.context.selected_objects)
+        remoteSock = None
+        if bpy.context.scene.remoteRenderProp: 
+            remoteSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            remoteSock.connect((bpy.context.scene.remoteRenderIP, bpy.context.scene.remoteRenderPort)) 
+        verifyObjects(bpy.context.selected_objects, remoteSock)
+        if not remoteSock is None:
+            remoteSock.close()
         return {'FINISHED'}
 
 class SelectUnverifiedOperator(bpy.types.Operator):
@@ -471,7 +479,7 @@ class ViewGenOperator(bpy.types.Operator):
         )
 
     def execute(self, context):
-        generateViews(bpy.context.scene.numViewsProp, reset=True, checked=False)
+        generateViews(bpy.context.scene.numViewsProp, reset=True, checked=False, sock=None)
         return {'FINISHED'}
 
     

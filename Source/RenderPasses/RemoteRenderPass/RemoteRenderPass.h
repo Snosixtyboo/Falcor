@@ -38,7 +38,7 @@ public:
     int port = 4242;
     sockaddr_in sockaddr;
     SOCKET sockfd;
-    SOCKET connection;
+    SOCKET connection = 0;
     WSOrg();
     ~WSOrg();
 };

@@ -86,8 +86,17 @@ WSOrg::WSOrg()
     sockaddr.sin_addr.s_addr = INADDR_ANY;
     sockaddr.sin_port = htons(port); // htons is necessary to convert a number to
                                      // network byte order
+    memset(sockaddr.sin_zero, '\0', sizeof(sockaddr.sin_zero));
+
     if (bind(sockfd, (struct sockaddr*)&sockaddr, sizeof(sockaddr)) < 0) {
         std::cout << "Failed to bind to port " << port << ". errno: " << errno << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    int yes;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char*)&yes, sizeof(int)) < 0)
+    {
+        std::cout << "Failed to set sockopt. errno: " << errno << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -228,24 +237,45 @@ void RemoteRenderPass::execute(RenderContext* pRenderContext, const RenderData& 
                 sent += send(wsorg.connection, passed.data() + sent, (int)passed.size() - sent, 0);
             }
             capturing = false;
-            closesocket(wsorg.connection);
         }
     }
     else
     {
-        // Grab a connection from the queue
-        auto addrlen = sizeof(sockaddr);
-        wsorg.connection = accept(wsorg.sockfd, (struct sockaddr*)&wsorg.sockaddr, (int*)&addrlen);
-        if (wsorg.connection == INVALID_SOCKET) {
-            return;
-        }
-
-        //std::cout << "Connected!" << std::endl;
-
         struct {
             int numCams;
             float threshold;
         } info;
+
+        if (wsorg.connection)
+        {
+            int res = recv(wsorg.connection, (char*)&info, sizeof(info), MSG_PEEK);
+            if (res == 0) // closed
+            {
+                closesocket(wsorg.connection);
+                std::cout << "Closing " << wsorg.connection << std::endl;
+                wsorg.connection = 0;
+            }
+            else if (res < 0)
+            {
+                return;
+            }
+        }
+
+        // Grab a connection from the queue
+        auto addrlen = sizeof(sockaddr);
+        SOCKET newConn = accept(wsorg.sockfd, (struct sockaddr*)&wsorg.sockaddr, (int*)&addrlen);
+        if (newConn != INVALID_SOCKET)
+        {
+            wsorg.connection = newConn;
+            std::cout << "Accepting " << wsorg.connection << std::endl;
+        }
+
+        if (wsorg.connection == 0)
+        {
+            return;
+        }
+
+        //std::cout << "Connected!" << std::endl;
 
         while (recv(wsorg.connection, (char*)&info, sizeof(info), MSG_PEEK) < (int)sizeof(info));
         recv(wsorg.connection, (char*)&info, sizeof(info), 0);
