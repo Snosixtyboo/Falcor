@@ -131,6 +131,12 @@ def clearViewpoints():
     if bpy.context.scene.camLocsProp:
         for obj in bpy.context.scene.camLocsProp.objects:
             bpy.data.objects.remove(obj)
+            
+def clearPrevViewpoints():
+    if bpy.context.scene.camLocsProp:
+        for obj in bpy.context.scene.camLocsProp.objects:
+            if obj.parent:
+                bpy.data.objects.remove(obj)
 
 
 def march(context):
@@ -195,6 +201,14 @@ def selectUnverified():
                 break
 
         cam.select_set(missing)
+        
+def selectWithoutPrev():
+    for obj in bpy.context.selected_objects:
+        obj.select_set(False)
+        
+    for cam in bpy.context.scene.camLocsProp.objects:
+        if len(cam.children) == 0 and not cam.parent:
+            cam.select_set(True)
             
 def verifyObjects(objs, sock):
     
@@ -318,12 +332,12 @@ def generateViews(numViews, reset, checked, sock):
         locID = random() * len(bpy.context.scene.possibleLocations)
         testLocation = bpy.context.scene.possibleLocations[int(locID)].location
         testRotation = bpy.context.scene.camProp.rotation_euler.copy()
-        testRotation[1] += radians(random() * (
-            bpy.context.scene.rollMaxProp - bpy.context.scene.rollMinProp
-        ) + bpy.context.scene.rollMinProp)
         testRotation[0] += radians(random() * (
             bpy.context.scene.pitchMaxProp - bpy.context.scene.pitchMinProp
         ) + bpy.context.scene.pitchMinProp)
+        testRotation[1] += radians(random() * (
+            bpy.context.scene.rollMaxProp - bpy.context.scene.rollMinProp
+        ) + bpy.context.scene.rollMinProp)
         testRotation[2] += radians(random() * (
             bpy.context.scene.yawMaxProp - bpy.context.scene.yawMinProp
         ) + bpy.context.scene.yawMinProp)
@@ -340,6 +354,117 @@ def generateViews(numViews, reset, checked, sock):
         bpy.context.scene.camLocsProp.objects.link(copyobj)
         copyobj.select_set(True)
         viewsMade += 1
+        
+def generatePreviousViews(sock):
+    
+    toVary = [(
+        bpy.context.scene.prevpitchProbProp, 
+        bpy.context.scene.prevpitchMinProp,
+        bpy.context.scene.prevpitchMaxProp
+    ),
+    (
+        bpy.context.scene.prevrollProbProp, 
+        bpy.context.scene.prevrollMinProp,
+        bpy.context.scene.prevrollMaxProp,
+    ),
+    (
+        bpy.context.scene.prevyawProbProp, 
+        bpy.context.scene.prevyawMinProp,
+        bpy.context.scene.prevyawMaxProp
+    ),
+    (
+        bpy.context.scene.prevLateralProbProp,
+        bpy.context.scene.prevLateralMinProp,
+        bpy.context.scene.prevLateralMaxProp,
+    ),
+    (
+        bpy.context.scene.prevVerticalProbProp,
+        bpy.context.scene.prevVerticalMinProp,
+        bpy.context.scene.prevVerticalMaxProp,
+    ),
+    (
+        bpy.context.scene.prevStraightProbProp,
+        bpy.context.scene.prevStraightMinProp,
+        bpy.context.scene.prevStraightMaxProp,
+    )]
+    
+    for obj in bpy.context.selected_objects:
+        t = obj.location
+        r = obj.rotation_euler
+        
+        if obj.parent:
+            return False
+        
+        missing = True
+        for vo in bpy.context.scene.verifiedOrientations:
+            if vo.location[0] == t.x and vo.location[1] == t.y and vo.location[2] == t.z and vo.rotation[0] == r.x and vo.rotation[1] == r.y and vo.rotation[2] == r.z :
+                missing = False
+                break
+
+        if missing:
+            return False
+    
+    for obj in bpy.context.selected_objects:
+        
+        while len(obj.children) is not 0:
+            bpy.data.objects.remove(obj.children[0])
+        
+        success = False
+        while not success:
+            testLocation = obj.location.copy()
+            testRotation = obj.rotation_euler.copy()
+            
+            update = []
+            upTrans = mathutils.Vector((0,0,0))
+            
+            updated = False
+            for v in toVary:
+                if random() < v[0]:
+                    update.append(random() * (v[2] - v[1]) + v[1])
+                    updated = True
+                else:
+                    update.append(0)
+                  
+            if not updated:
+                max_p, max_i = 0, 0
+                for i in range(len(toVary)):
+                    if toVary[i][0] > max_p:
+                        maxp = toVary[i][0]
+                        max_i = i
+                        
+                update[max_i] = random() * (toVary[max_i][2] - toVary[max_i][1]) + toVary[max_i][1]
+                    
+            testRotation[0] += radians(update[0])
+            testRotation[1] += radians(update[1])
+            testRotation[2] += radians(update[2])
+            upTrans[0] = update[3]
+            upTrans[1] = update[4]
+            upTrans[2] = -update[5]
+            
+            testLocation += obj.matrix_world.to_3x3() @ upTrans
+                
+            copyobj = bpy.context.scene.camProp.copy()
+            copyobj.location = testLocation
+            copyobj.rotation_euler = testRotation
+            
+            if not verifyObjects([copyobj,], sock):
+                bpy.data.objects.remove(copyobj)
+                continue
+            
+            o = obj.location
+            d = (testLocation - o)
+            t = d.length
+            r = sceneBVH.ray_cast(o, d.normalized(), t)
+            if r[3] is not None:
+                continue
+            
+            success = True
+            copyobj.parent = obj
+            copyobj.matrix_parent_inverse = obj.matrix_world.inverted()
+            bpy.context.scene.camLocsProp.objects.link(copyobj)
+            
+    return True
+
         
 class FixSelectedOperator(bpy.types.Operator):
     """Fix selected viewpoints"""
@@ -400,6 +525,19 @@ class SelectUnverifiedOperator(bpy.types.Operator):
         selectUnverified()
         return {'FINISHED'}
     
+class SelectWithoutPrevOperator(bpy.types.Operator):
+    """Select view points that have no prev viewpoint assigned"""
+    bl_idname = "object.select_without_prev"
+    bl_label = "Select viewpoints w/o previous"
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.context.scene.camLocsProp is not None
+
+    def execute(self, context):
+        selectWithoutPrev()
+        return {'FINISHED'}
+    
 class ClearVerificationOperator(bpy.types.Operator):
     """Remove cached verification data"""
     bl_idname = "object.clear_verification"
@@ -443,6 +581,19 @@ class ClearCamsOperator(bpy.types.Operator):
     def execute(self, context):
         clearViewpoints()
         return {'FINISHED'}
+    
+class ClearPreviousOperator(bpy.types.Operator):
+    """Clear previous cams"""
+    bl_idname = "object.clear_previous_operator"
+    bl_label = "Clear all previous frame views"
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.context.scene.camLocsProp is not None
+
+    def execute(self, context):
+        clearPrevViewpoints()
+        return {'FINISHED'}
 
 
 class MarchingOperator(bpy.types.Operator):
@@ -481,10 +632,36 @@ class ViewGenOperator(bpy.types.Operator):
     def execute(self, context):
         generateViews(bpy.context.scene.numViewsProp, reset=True, checked=False, sock=None)
         return {'FINISHED'}
+    
+class GeneratePrevOperator(bpy.types.Operator):
+    """Generate previous view points for selection"""
+    bl_idname = "object.gen_prev_operator"
+    bl_label = "Make previous frame views"
+
+    @classmethod
+    def poll(cls, context):
+        return (
+            bpy.context.scene.camProp is not None and
+            bpy.context.scene.camLocsProp is not None and
+            bpy.context.scene.possibleLocations is not None and
+            len(bpy.context.scene.possibleLocations) != 0
+        )
+
+    def execute(self, context):
+        remoteSock = None
+        if bpy.context.scene.remoteRenderProp: 
+            remoteSock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            remoteSock.connect((bpy.context.scene.remoteRenderIP, bpy.context.scene.remoteRenderPort))
+        res = generatePreviousViews(sock=remoteSock)
+        if not res:
+            self.report({'ERROR'}, "Some selected viewpoints are not top-level/verified!")
+        if not remoteSock is None:
+            remoteSock.close()
+        return {'FINISHED'}
 
     
-class MakeDefaultCamOperator(bpy.types.Operator, AddObjectHelper):
-    """Default Cam"""
+class MakeDefaultCamOperator(bpy.types.Operator):
+    """Generate default camera geometry"""
     bl_idname = "object.make_default_cam"
     bl_label = "Default"
 
@@ -529,14 +706,21 @@ class WriteCamFileOperator(bpy.types.Operator, AddObjectHelper):
         file = open(bpy.context.scene.outFileProp, "w")
         firstLine = True
         for obj in bpy.context.scene.camLocsProp.objects:
+            if obj.parent:
+                continue
             if not firstLine:
                 file.write("\n")
             firstLine = False
             m = obj.matrix_world.copy()
-            #m.invert()
             for i in range(0, 4):
                 for j in range(0, 4):
                     file.write(str(m[i][j]) + " ")
+            
+            if len(obj.children) > 0:
+                m = obj.children[0].matrix_world.copy()
+                for i in range(0, 4):
+                    for j in range(0, 4):
+                        file.write(str(m[i][j]) + " ")
         
         return {'FINISHED'}
 
@@ -617,6 +801,45 @@ class AUTOVIEW_PT_layout_panel(bpy.types.Panel):
         col.operator("object.verify_selected")
         col.operator("object.fix_selected")
         
+        col = layout.column()
+        col.label(text="Previous Frame Variation:")
+        
+        row = layout.row(align=True)
+        row.label(text="Straight:")
+        row.prop(scene, "prevStraightProbProp", text = "")
+        row.prop(scene, "prevStraightMinProp", text="")
+        row.prop(scene, "prevStraightMaxProp", text="")
+        row = layout.row(align=True)
+        row.label(text="Lateral:")
+        row.prop(scene, "prevLateralProbProp", text = "")
+        row.prop(scene, "prevLateralMinProp", text="")
+        row.prop(scene, "prevLateralMaxProp", text="")
+        row = layout.row(align=True)
+        row.label(text="Vertical:")
+        row.prop(scene, "prevVerticalProbProp", text = "")
+        row.prop(scene, "prevVerticalMinProp", text="")
+        row.prop(scene, "prevVerticalMaxProp", text="")
+        row = layout.row(align=True)
+        row.label(text="Yaw:")
+        row.prop(scene, "prevyawProbProp", text = "")
+        row.prop(scene, "prevyawMinProp", text="")
+        row.prop(scene, "prevyawMaxProp", text="")
+        row = layout.row(align=True)
+        row.label(text="Pitch:")
+        row.prop(scene, "prevpitchProbProp", text = "")
+        row.prop(scene, "prevpitchMinProp", text="")
+        row.prop(scene, "prevpitchMaxProp", text="")
+        row = layout.row(align=True)
+        row.label(text="Roll:")
+        row.prop(scene, "prevrollProbProp", text = "")
+        row.prop(scene, "prevrollMinProp", text="")
+        row.prop(scene, "prevrollMaxProp", text="")
+        col = layout.column()
+        col.operator("object.clear_previous_operator")
+        col.operator("object.select_without_prev")
+        col.operator("object.gen_prev_operator")
+        
+        col = layout.column()
         col.label(text="Output:")
         col.prop(scene, "outFileProp", text="Path")
         col.operator("object.write_cam_file")
@@ -647,6 +870,24 @@ def register():
     bpy.types.Scene.pitchMaxProp = bpy.props.FloatProperty(default=20, min=0, max=180)
     bpy.types.Scene.rollMinProp = bpy.props.FloatProperty(default=-0, min=-180, max = 0)
     bpy.types.Scene.rollMaxProp = bpy.props.FloatProperty(default=0, min=0, max=180)
+    bpy.types.Scene.prevyawProbProp = bpy.props.FloatProperty(default=0.1, min=0, max = 1)
+    bpy.types.Scene.prevyawMinProp = bpy.props.FloatProperty(default=-10, min=-180, max = 0)
+    bpy.types.Scene.prevyawMaxProp = bpy.props.FloatProperty(default=10, min=0, max=180)
+    bpy.types.Scene.prevpitchProbProp = bpy.props.FloatProperty(default=0.1, min=0, max = 1)
+    bpy.types.Scene.prevpitchMinProp = bpy.props.FloatProperty(default=-10, min=-180, max = 0)
+    bpy.types.Scene.prevpitchMaxProp = bpy.props.FloatProperty(default=10, min=0, max=180)
+    bpy.types.Scene.prevrollProbProp = bpy.props.FloatProperty(default=0.1, min=0, max = 1)
+    bpy.types.Scene.prevrollMinProp = bpy.props.FloatProperty(default=-0, min=-180, max = 0)
+    bpy.types.Scene.prevrollMaxProp = bpy.props.FloatProperty(default=0, min=0, max=180)
+    bpy.types.Scene.prevStraightProbProp = bpy.props.FloatProperty(default=0.1, min=0, max = 1)
+    bpy.types.Scene.prevStraightMinProp = bpy.props.FloatProperty(default=0, max = 0)
+    bpy.types.Scene.prevStraightMaxProp = bpy.props.FloatProperty(default=0, min=0)
+    bpy.types.Scene.prevLateralProbProp = bpy.props.FloatProperty(default=0.1, min=0, max = 1)
+    bpy.types.Scene.prevLateralMinProp = bpy.props.FloatProperty(default=0, max = 0)
+    bpy.types.Scene.prevLateralMaxProp = bpy.props.FloatProperty(default=0, min=0)
+    bpy.types.Scene.prevVerticalProbProp = bpy.props.FloatProperty(default=0.1, min=0, max = 1)
+    bpy.types.Scene.prevVerticalMinProp = bpy.props.FloatProperty(default=0, max = 0)
+    bpy.types.Scene.prevVerticalMaxProp = bpy.props.FloatProperty(default=0, min=0)
     bpy.types.Scene.randSeedProp = bpy.props.IntProperty(default=42, min=0, max=1024, step=1)
     bpy.types.Scene.minForegroundProp = bpy.props.IntProperty(default=15, min=0, max=100, step=1, subtype="PERCENTAGE")
     bpy.types.Scene.outFileProp = bpy.props.StringProperty(default='./out.cfg', subtype='FILE_PATH')
@@ -666,6 +907,9 @@ def register():
     bpy.utils.register_class(VerifySelectedOperator)
     bpy.utils.register_class(FixSelectedOperator)
     bpy.utils.register_class(WriteCamFileOperator)
+    bpy.utils.register_class(SelectWithoutPrevOperator)
+    bpy.utils.register_class(GeneratePrevOperator)
+    bpy.utils.register_class(ClearPreviousOperator)
     bpy.types.Scene.floodProp = PointerProperty(type=bpy.types.Object)
 
 def unregister():
@@ -675,6 +919,14 @@ def unregister():
     bpy.utils.unregister_class(ClearFillersOperator)
     bpy.utils.unregister_class(MakeDefaultCamOperator)
     bpy.utils.unregister_class(ClearCamsOperator)
+    bpy.utils.unregister_class(SelectUnverifiedOperator)
+    bpy.utils.unregister_class(ClearVerificationOperator)
+    bpy.utils.unregister_class(VerifySelectedOperator)
+    bpy.utils.unregister_class(FixSelectedOperator)
+    bpy.utils.unregister_class(WriteCamFileOperator)
+    bpy.utils.unregister_class(SelectWithoutPrevOperator)
+    bpy.utils.unregister_class(GeneratePrevOperator)
+    bpy.utils.unregister_class(ClearPreviousOperator)
 
    
 if __name__ == "__main__":

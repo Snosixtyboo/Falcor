@@ -16,6 +16,7 @@ Texture2D gNormW;
 Texture2D gDiffuse;
 Texture2D gSpecRough;
 Texture2D gEmissive;
+Texture2D visibilityBuffer;
 
 StructuredBuffer<LightData> lights;
 
@@ -73,7 +74,7 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 		float shadowFactor = 1;
 	    if (l == 0)
         {
-			shadowFactor = 1;
+			shadowFactor = visibilityBuffer.SampleLevel(gSampler, texC, 0).r;
             shadowFactor *= sd.opacity;
         }
         finalColor.rgb += evalMaterial(sd, lights[l], shadowFactor).color;

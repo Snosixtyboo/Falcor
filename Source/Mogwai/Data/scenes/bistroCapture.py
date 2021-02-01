@@ -1,38 +1,38 @@
+# Graphs
 from falcor import *
+import os
 
 def render_graph_DefaultRenderGraph():
     g = RenderGraph('DefaultRenderGraph')
-    loadRenderPassLibrary('BSDFViewer.dll')
     loadRenderPassLibrary('AccumulatePass.dll')
-    loadRenderPassLibrary('DepthPass.dll')
+    loadRenderPassLibrary('BSDFViewer.dll')
     loadRenderPassLibrary('Antialiasing.dll')
+    loadRenderPassLibrary('DepthPass.dll')
     loadRenderPassLibrary('BlitPass.dll')
-    loadRenderPassLibrary('CSM2.dll')
+    loadRenderPassLibrary('FeedbackPass.dll')
     loadRenderPassLibrary('CSM.dll')
     loadRenderPassLibrary('ExampleBlitPass.dll')
-    loadRenderPassLibrary('FeedbackPass.dll')
     loadRenderPassLibrary('ForwardLightingPass.dll')
     loadRenderPassLibrary('GBuffer.dll')
-    loadRenderPassLibrary('RemoteRenderPass.dll')
     loadRenderPassLibrary('SceneWritePass.dll')
-    loadRenderPassLibrary('SSAO.dll')
     loadRenderPassLibrary('SkyBox.dll')
+    loadRenderPassLibrary('SSAO.dll')
     loadRenderPassLibrary('ToneMapper.dll')
     loadRenderPassLibrary('Utils.dll')
-    SkyBox = createPass('SkyBox', {'texName': '', 'loadAsSrgb': True, 'filter': SamplerFilter.Linear})
-    g.addPass(SkyBox, 'SkyBox')
-    SSAO = createPass('SSAO', {'aoMapSize': uint2(1024,1024), 'kernelSize': 16, 'noiseSize': uint2(16,16), 'radius': 0.10000000149011612, 'distribution': SampleDistribution.CosineHammersley, 'blurWidth': 5, 'blurSigma': 2.0})
-    g.addPass(SSAO, 'SSAO')
     ExampleBlitPass = createPass('ExampleBlitPass')
     g.addPass(ExampleBlitPass, 'ExampleBlitPass')
-    GBufferRaster = createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack})
-    g.addPass(GBufferRaster, 'GBufferRaster')
+    SSAO = createPass('SSAO', {'aoMapSize': uint2(1024,1024), 'kernelSize': 16, 'noiseSize': uint2(16,16), 'radius': 0.10000000149011612, 'distribution': SampleDistribution.CosineHammersley, 'blurWidth': 5, 'blurSigma': 2.0})
+    g.addPass(SSAO, 'SSAO')
+    SkyBox = createPass('SkyBox', {'texName': '', 'loadAsSrgb': True, 'filter': SamplerFilter.Linear})
+    g.addPass(SkyBox, 'SkyBox')
     FXAA = createPass('FXAA', {'qualitySubPix': 0.75, 'qualityEdgeThreshold': 0.16599999368190765, 'qualityEdgeThresholdMin': 0.08330000191926956, 'earlyOut': True})
     g.addPass(FXAA, 'FXAA')
+    GBufferRaster = createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack})
+    g.addPass(GBufferRaster, 'GBufferRaster')
     ToneMapper = createPass('ToneMapper', {'exposureCompensation': 0.0, 'autoExposure': True, 'exposureValue': 0.0, 'filmSpeed': 100.0, 'whiteBalance': False, 'whitePoint': 6500.0, 'operator': ToneMapOp.Aces, 'clamp': True, 'whiteMaxLuminance': 1.0, 'whiteScale': 11.199999809265137, 'fNumber': 1.0, 'shutter': 1.0, 'exposureMode': ExposureMode.AperturePriority})
-    g.addPass(ToneMapper, 'ToneMapper')
     CSM = createPass('CSM', {'mapSize': uint2(2048,2048), 'visibilityBufferSize': uint2(0,0), 'cascadeCount': 4, 'visibilityMapBitsPerChannel': 32, 'kSdsmReadbackLatency': 1, 'blurWidth': 5, 'blurSigma': 2.0})
     g.addPass(CSM, 'CSM')
+    g.addPass(ToneMapper, 'ToneMapper')
     g.addEdge('GBufferRaster.posW', 'ExampleBlitPass.posW')
     g.addEdge('GBufferRaster.normW', 'ExampleBlitPass.normW')
     g.addEdge('GBufferRaster.tangentW', 'ExampleBlitPass.tangentW')
@@ -53,7 +53,27 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('CSM.visibility', 'ExampleBlitPass.visibilityBuffer')
     g.markOutput('FXAA.dst')
     return g
+m.addGraph(render_graph_DefaultRenderGraph())
 
-DefaultRenderGraph = render_graph_DefaultRenderGraph()
-try: m.addGraph(DefaultRenderGraph)
-except NameError: None
+# Scene
+BASE_PATH = os.getenv('FALCOR_DATA').strip("/")
+m.loadScene(BASE_PATH + '/Bistro_v5_1/BistroInterior.fbx')
+m.scene.renderSettings = SceneRenderSettings(useEnvLight=True, useAnalyticLights=True, useEmissiveLights=True)
+m.scene.camera.nearPlane = 0.10000000149011612
+m.scene.camera.farPlane = 100.0
+m.scene.cameraSpeed = 1.0
+
+# Window Configuration
+m.resizeSwapChain(1920, 1080)
+m.ui = True
+
+# Time Settings
+t.time = 0
+t.framerate = 0
+# If framerate is not zero, you can use the frame property to set the start frame
+# t.frame = 0
+
+# Frame Capture
+fc.outputDir = '.'
+fc.baseFilename = 'Mogwai'
+

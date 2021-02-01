@@ -330,6 +330,12 @@ void CSM::createShadowPassResources()
     mShadowPass.pState->setProgram(mShadowPass.pProgram);
     mShadowPass.pState->setDepthStencilState(nullptr);
     mShadowPass.pState->setFbo(mShadowPass.pFbo);
+
+    RasterizerState::Desc rsDesc;
+    rsDesc.setDepthClamp(true);
+    RasterizerState::SharedPtr rsState = RasterizerState::create(rsDesc);
+    mShadowPass.pState->setRasterizerState(rsState);
+
 }
 
 CSM::CSM()
@@ -616,7 +622,7 @@ void CSM::renderScene(RenderContext* pCtx)
 
     pCB->setBlob(&mCsmData, 0, sizeof(mCsmData));
     mpLightCamera->setProjectionMatrix(mCsmData.globalMat);
-    mpScene->render(pCtx, mShadowPass.pState.get(), mShadowPass.pVars.get());
+    mpScene->render(pCtx, mShadowPass.pState.get(), mShadowPass.pVars.get(), Scene::RenderFlags::UserRasterizerState);
     //        mpCsmSceneRenderer->renderScene(pCtx, mShadowPass.pState.get(), mShadowPass.pVars.get(), mpLightCamera.get());
 }
 

@@ -13,6 +13,8 @@ private:
 
     std::string targetDir = ".";
     size_t captureInterval = 1000;
+    size_t waitedFrames = 0;
+    size_t framesWait = 2;
     Falcor::Bitmap::FileFormat dumpFormat = Falcor::Bitmap::FileFormat::PfmFile;
     ViewpointGeneration viewpointMethod = ViewpointGeneration::FromFile;
 
@@ -48,6 +50,8 @@ private:
 
     ExampleBlitPass();
     void loadViewPoints();
+
+    bool doingPrevious = true;
 
 public:
     using SharedPtr = std::shared_ptr<ExampleBlitPass>;

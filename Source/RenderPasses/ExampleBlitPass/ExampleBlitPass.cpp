@@ -17,7 +17,7 @@ const ChannelList ExampleBlitPass::kGBufferChannels =
 };
 
 const std::string kDepthName = "depth";
-
+const std::string kVisBuffer = "visibilityBuffer";
 const std::string kShaderFilename = "RenderPasses/ExampleBlitPass/CopyPass.slang";
 
 // Don't remove this. it's required for hot-reload to function properly
@@ -109,6 +109,7 @@ RenderPassReflection ExampleBlitPass::reflect(const CompileData& compileData)
 
     addRenderPassInputs(reflector, kGBufferChannels);
     reflector.addInputOutput("color", "the color texture").format(ResourceFormat::RGBA32Float).texture2D(0,0, 1);
+    reflector.addInput(kVisBuffer, "Visibility buffer used for shadowing. Range is [0,1] where 0 means the pixel is fully-shadowed and 1 means the pixel is not shadowed at all").flags(RenderPassReflection::Field::Flags::Optional);
     reflector.addOutput("normalsOut", "World-space normal, [0,1] range.").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
     reflector.addOutput("viewDirsOut", "View directions").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
@@ -142,7 +143,9 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
         const auto& diffuseOpacity = renderData["diffuseOpacity"]->asTexture();
         const auto& specRough = renderData["specRough"]->asTexture();
         const auto& emissive = renderData["emissive"]->asTexture();
+        const auto& visibility = renderData[kVisBuffer]->asTexture();
 
+        mpPass[kVisBuffer] = visibility;
         mpPass["gPosW"] = posW;
         mpPass["gNormW"] = normW;
         mpPass["gDiffuse"] = diffuseOpacity;
@@ -158,6 +161,12 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
 
         mpPass->execute(pRenderContext, mpFbo);
 
+        waitedFrames++;
+        if (waitedFrames % framesWait)
+        {
+            return; // No capturing right now
+        }
+
         if (capturing) {
             float antiBias = 0.9f + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(0.2f)));
 
@@ -165,13 +174,24 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
                 if (viewpointMethod == ViewpointGeneration::FromFile) {
                     viewPointToCapture++;
 
-                    if (viewPointToCapture == 1) {
-                        mpScene->getCamera()->queueConfigs(camMatrices);
-                        return;
-                    } else {
-                        if (viewPointToCapture > camMatrices.size()) { // first iteration, camera will only be applied next round
-                            capturing = false;
+                    if (viewPointToCapture == 1)
+                    {
+                        auto camMatrices2 = camMatrices;
+                        std::queue<glm::mat4> toQueue;
+                        while (!camMatrices2.empty())
+                        {
+                            auto& c = camMatrices2.front();
+                            camMatrices2.pop();
+                            for (int i = 0; i < framesWait; i++)
+                            {   toQueue.push(c);  }
                         }
+                        mpScene->getCamera()->queueConfigs(toQueue);
+                        waitedFrames = 0;
+                        return;
+                    }
+                    else if (viewPointToCapture > camMatrices.size())
+                    {
+                        capturing = false;
                     }
                 }
 
@@ -181,45 +201,63 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
                 std::string capturedStr = ss.str();
                 targetPath /= capturedStr;
 
-                if (!std::filesystem::create_directory(targetPath))
-                {
-                    logError("Failed to create directory " + targetPath.string() + " for frame dumps!", Logger::MsgBox::RetryAbort);
-                    return;
-                }
-
                 gpFramework->getGlobalClock().pause();
                 gpFramework->pauseRenderer(true);
 
                 const D3D12_SHADING_RATE dumpRates[3] = { D3D12_SHADING_RATE_1X1, D3D12_SHADING_RATE_2X2, D3D12_SHADING_RATE_4X4 };
                 const std::string dumpRateNames[3] = { "1x1", "2x2", "4x4" };
 
-                std::filesystem::path diffuseOpacityFile = targetPath / ("diffuse-opacity_" + dumpRateNames[0] + fileEnding);
-                std::filesystem::path specRoughFile = targetPath / ("specular-roughness_" + dumpRateNames[0] + fileEnding);
-                std::filesystem::path emissiveFile = targetPath / ("emissive_" + dumpRateNames[0] + fileEnding);
-                std::filesystem::path viewFile = targetPath / ("view_" + dumpRateNames[0] + fileEnding);
-                std::filesystem::path normalFile = targetPath / ("normal_" + dumpRateNames[0] + fileEnding);
-                std::filesystem::path roughOpacFile = targetPath / ("roughness-opacity_" + dumpRateNames[0] + fileEnding);
-
-                diffuseOpacity->captureToFile(0, 0, diffuseOpacityFile.string(), dumpFormat);
-                specRough->captureToFile(0, 0, specRoughFile.string(), dumpFormat);
-                emissive->captureToFile(0, 0, emissiveFile.string(), dumpFormat);
-                viewDirsOut->captureToFile(0, 0, viewFile.string(), dumpFormat);
-                viewNormalsOut->captureToFile(0, 0, normalFile.string(), dumpFormat);
-                roughOpacOut->captureToFile(0, 0, roughOpacFile.string(), dumpFormat);
-
-                for (int i = 0; i < sizeof(dumpRates)/sizeof(dumpRates[0]); i++)
+                if (doingPrevious)
                 {
-                    commandList5->RSSetShadingRate(dumpRates[i], nullptr);
-                    mpPass->execute(pRenderContext, mpFbo);
-                    std::filesystem::path outputFile = targetPath / ("output_" + dumpRateNames[i] + fileEnding);
-                    output->captureToFile(0, 0, outputFile.string(), dumpFormat);
+                    if (!std::filesystem::create_directory(targetPath))
+                    {
+                        if (viewpointMethod == ViewpointGeneration::FromFile) {
+                            viewPointToCapture--;
+                        }
+                        logError("Failed to create directory " + targetPath.string() + " for frame dumps!", Logger::MsgBox::RetryAbort);
+                        return;
+                    }
+
+                    doingPrevious = false;
+
+                    std::filesystem::path prevFile = targetPath / ("previous_" + dumpRateNames[0] + fileEnding);
+                    output->captureToFile(0, 0, prevFile.string(), dumpFormat);
+                }
+                else
+                {
+                    doingPrevious = true;
+
+                    std::filesystem::path diffuseOpacityFile = targetPath / ("diffuse-opacity_" + dumpRateNames[0] + fileEnding);
+                    std::filesystem::path specRoughFile = targetPath / ("specular-roughness_" + dumpRateNames[0] + fileEnding);
+                    std::filesystem::path emissiveFile = targetPath / ("emissive_" + dumpRateNames[0] + fileEnding);
+                    std::filesystem::path viewFile = targetPath / ("view_" + dumpRateNames[0] + fileEnding);
+                    std::filesystem::path normalFile = targetPath / ("normal_" + dumpRateNames[0] + fileEnding);
+                    std::filesystem::path roughOpacFile = targetPath / ("roughness-opacity_" + dumpRateNames[0] + fileEnding);
+                    std::filesystem::path visibilityFile = targetPath / ("visibility_" + dumpRateNames[0] + fileEnding);
+
+                    diffuseOpacity->captureToFile(0, 0, diffuseOpacityFile.string(), dumpFormat);
+                    specRough->captureToFile(0, 0, specRoughFile.string(), dumpFormat);
+                    emissive->captureToFile(0, 0, emissiveFile.string(), dumpFormat);
+                    viewDirsOut->captureToFile(0, 0, viewFile.string(), dumpFormat);
+                    viewNormalsOut->captureToFile(0, 0, normalFile.string(), dumpFormat);
+                    roughOpacOut->captureToFile(0, 0, roughOpacFile.string(), dumpFormat);
+                    visibility->captureToFile(0, 0, visibilityFile.string(), dumpFormat);
+
+                    for (int i = 0; i < sizeof(dumpRates) / sizeof(dumpRates[0]); i++)
+                    {
+                        commandList5->RSSetShadingRate(dumpRates[i], nullptr);
+                        mpPass->execute(pRenderContext, mpFbo);
+                        std::filesystem::path outputFile = targetPath / ("output_" + dumpRateNames[i] + fileEnding);
+                        output->captureToFile(0, 0, outputFile.string(), dumpFormat);
+                    }
+
+                    framesCaptured++;
                 }
 
                 gpFramework->pauseRenderer(false);
                 gpFramework->getGlobalClock().play();
 
                 lastCaptureTime = clock();
-                framesCaptured++;
 
                 commandList5->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
             }
@@ -245,24 +283,29 @@ void ExampleBlitPass::loadViewPoints()
         std::string line;
         while (std::getline(infile, line))
         {
-            glm::mat4x4 mat;
             std::stringstream ss(line);
-            for (int i = 0; i < 4; i++)
+            glm::mat4x4 mats[2];
+            for (int l = 0; l < 2; l++) //actual view point, previous viewpoint
             {
+                glm::mat4x4& mat = mats[l];
+                for (int i = 0; i < 4; i++)
+                {
+                    for (int j = 0; j < 4; j++)
+                    {
+                        ss >> mat[j][i];
+                    }
+                }
                 for (int j = 0; j < 4; j++)
                 {
-                    ss >> mat[j][i];
+                    float v = mat[j][1];
+                    float w = mat[j][2];
+                    mat[j][2] = -v;
+                    mat[j][1] = w;
                 }
+                mat[2] = -mat[2]; // Apparently handedness mismatch with blender
             }
-            for (int j = 0; j < 4; j++)
-            {
-                float v = mat[j][1];
-                float w = mat[j][2];
-                mat[j][2] = -v;
-                mat[j][1] = w;
-            }
-            mat[2] = -mat[2]; // Apparently handedness mismatch with blender
-            camMatrices.push(mat);
+            camMatrices.push(mats[1]);
+            camMatrices.push(mats[0]);
         }
     }
 }
@@ -288,6 +331,7 @@ void ExampleBlitPass::renderUI(Gui::Widgets& widget)
 
     if (!capturing && widget.button("Start capturing"))
     {
+        doingPrevious = true;
         viewPointToCapture = 0;
         capturing = true;
     }
