@@ -1,9 +1,9 @@
-#include "ExampleBlitPass.h"
+#include "DeferredCapturePass.h"
 #include <filesystem>
 #include <string>
 #include <cstdlib>
 
-const ChannelList ExampleBlitPass::kGBufferChannels =
+const ChannelList DeferredCapturePass::kGBufferChannels =
 {
     { "depth",          "gDepth",           "depth buffer",                 false               , ResourceFormat::D32Float},
     { "posW",           "gPosW",            "world space position",         true /* optional */, ResourceFormat::RGBA32Float },
@@ -18,7 +18,7 @@ const ChannelList ExampleBlitPass::kGBufferChannels =
 
 const std::string kDepthName = "depth";
 const std::string kVisBuffer = "visibilityBuffer";
-const std::string kShaderFilename = "RenderPasses/ExampleBlitPass/CopyPass.slang";
+const std::string kShaderFilename = "RenderPasses/DeferredCapturePass/Deferred.slang";
 
 // Don't remove this. it's required for hot-reload to function properly
 extern "C" __declspec(dllexport) const char* getProjDir()
@@ -28,10 +28,10 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
-    lib.registerClass("ExampleBlitPass", "Write render buffers to image files.", ExampleBlitPass::create);
+    lib.registerClass("DeferredCapturePass", "Write render buffers to image files.", DeferredCapturePass::create);
 }
 
-ExampleBlitPass::ExampleBlitPass()
+DeferredCapturePass::DeferredCapturePass()
 {
     mpPass = FullScreenPass::create(kShaderFilename);
     mpFbo = Fbo::create();
@@ -58,7 +58,7 @@ ExampleBlitPass::ExampleBlitPass()
 }
 
 
-void ExampleBlitPass::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
+void DeferredCapturePass::setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene)
 {
     if (pScene)
     {
@@ -91,18 +91,18 @@ void ExampleBlitPass::setScene(RenderContext* pRenderContext, const Scene::Share
     }
 }
 
-ExampleBlitPass::SharedPtr ExampleBlitPass::create(RenderContext* pRenderContext, const Dictionary& dict)
+DeferredCapturePass::SharedPtr DeferredCapturePass::create(RenderContext* pRenderContext, const Dictionary& dict)
 {
-    SharedPtr pPass = SharedPtr(new ExampleBlitPass);
+    SharedPtr pPass = SharedPtr(new DeferredCapturePass);
     return pPass;
 }
 
-Dictionary ExampleBlitPass::getScriptingDictionary()
+Dictionary DeferredCapturePass::getScriptingDictionary()
 {
     return Dictionary();
 }
 
-RenderPassReflection ExampleBlitPass::reflect(const CompileData& compileData)
+RenderPassReflection DeferredCapturePass::reflect(const CompileData& compileData)
 {
     // Define the required resources here
     RenderPassReflection reflector;
@@ -117,7 +117,7 @@ RenderPassReflection ExampleBlitPass::reflect(const CompileData& compileData)
     return reflector;
 }
 
-void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& renderData)
+void DeferredCapturePass::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
     // renderData holds the requested resources
     const auto& output = renderData["color"]->asTexture();
@@ -215,6 +215,9 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
                             viewPointToCapture--;
                         }
                         logError("Failed to create directory " + targetPath.string() + " for frame dumps!", Logger::MsgBox::RetryAbort);
+                        commandList5->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
+                        gpFramework->pauseRenderer(false);
+                        gpFramework->getGlobalClock().play();
                         return;
                     }
 
@@ -265,7 +268,7 @@ void ExampleBlitPass::execute(RenderContext* pRenderContext, const RenderData& r
     }
 }
 
-void ExampleBlitPass::loadViewPoints()
+void DeferredCapturePass::loadViewPoints()
 {
     std::string filename;
     FileDialogFilterVec filters = { {"cfg", "txt"} };
@@ -310,7 +313,7 @@ void ExampleBlitPass::loadViewPoints()
     }
 }
 
-void ExampleBlitPass::renderUI(Gui::Widgets& widget)
+void DeferredCapturePass::renderUI(Gui::Widgets& widget)
 {
     // Capturing control
     if (mpScene && mpScene->getCamera()->hasAnimation())

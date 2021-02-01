@@ -3,7 +3,7 @@ import os
 from falcor import *
 
 def render_graph_DefaultRenderGraph():
-    g = RenderGraph('DefaultRenderGraph')
+    g = RenderGraph('RemoteRenderGraph')
     loadRenderPassLibrary('BSDFViewer.dll')
     loadRenderPassLibrary('AccumulatePass.dll')
     loadRenderPassLibrary('DepthPass.dll')
@@ -11,7 +11,7 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('FeedbackPass.dll')
     loadRenderPassLibrary('BlitPass.dll')
     loadRenderPassLibrary('CSM.dll')
-    loadRenderPassLibrary('ExampleBlitPass.dll')
+    loadRenderPassLibrary('DeferredCapturePassPass.dll')
     loadRenderPassLibrary('ForwardLightingPass.dll')
     loadRenderPassLibrary('GBuffer.dll')
     loadRenderPassLibrary('RemoteRenderPass.dll')

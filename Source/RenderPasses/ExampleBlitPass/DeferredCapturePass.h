@@ -6,7 +6,7 @@
 
 using namespace Falcor;
 
-class ExampleBlitPass : public RenderPass
+class DeferredCapturePass : public RenderPass
 {
 private:
     enum class ViewpointGeneration { FromFile, FromScenePath};
@@ -48,13 +48,13 @@ private:
     Buffer::SharedPtr mpLightsBuffer;
     LightProbe::SharedPtr lightProbe;
 
-    ExampleBlitPass();
+    DeferredCapturePass();
     void loadViewPoints();
 
     bool doingPrevious = true;
 
 public:
-    using SharedPtr = std::shared_ptr<ExampleBlitPass>;
+    using SharedPtr = std::shared_ptr<DeferredCapturePass>;
 
     /** Create a new render pass object.
         \param[in] pRenderContext The render context.
