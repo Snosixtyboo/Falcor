@@ -33,7 +33,7 @@ struct PsOut
     float4 normal : SV_TARGET1;
 	float4 viewDir : SV_TARGET2;
 	float4 viewNormal : SV_TARGET3;
-    float4 roughOpac : SV_TARGET4;
+    float4 roughOpacVis : SV_TARGET4;
 };
 
 
@@ -50,12 +50,7 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 
     if (sd.posW.x == 0 && sd.posW.y == 0 && sd.posW.z == 0)
     {
-        psOut.color = float4(0,0,0,1);
-        psOut.normal = float4(0,0,0,1);
-        psOut.viewDir = float4(0,0,0,1);
-        psOut.roughOpac = float4(0,0,0,1);
-        psOut.viewNormal = float4(0,0,0,1);
-        return psOut;
+        discard;
     }
 
     sd.V = normalize(cameraPosition - sd.posW);
@@ -69,12 +64,13 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 	sd.ggxAlpha = max(0.0064, sd.linearRoughness * sd.linearRoughness);
 	
     float4 finalColor = float4(0, 0, 0, 1);
+    float vis = visibilityBuffer.SampleLevel(gSampler, texC, 0).r;
     for (uint l = 0; l < lightCount; l++)
     {
 		float shadowFactor = 1;
 	    if (l == 0)
         {
-			shadowFactor = visibilityBuffer.SampleLevel(gSampler, texC, 0).r;
+			shadowFactor = vis;
             shadowFactor *= sd.opacity;
         }
         finalColor.rgb += evalMaterial(sd, lights[l], shadowFactor).color;
@@ -84,7 +80,7 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
     finalColor.rgb += sd.emissive;
     finalColor.a = sd.opacity;
     finalColor.rgb += evalMaterial(sd, tScene.lightProbe).color;
-	
+
 	psOut.color = finalColor;
 	psOut.normal = float4(sd.N * 0.5f + 0.5f, 1.0f);
 	if (sd.posW.x == 0 && sd.posW.y == 0 && sd.posW.z == 0)
@@ -95,7 +91,7 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 	{
 		psOut.viewDir = mul(float4(sd.V, 0.0f), world2View);
 	}
-    psOut.roughOpac = float4(sd.linearRoughness, sd.opacity, 0, 0);
+    psOut.roughOpacVis = float4(sd.linearRoughness, sd.opacity, vis, 0);
 	psOut.viewNormal = mul(float4(sd.N, 0.0f), world2View);
     return psOut;
 }

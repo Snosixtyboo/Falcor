@@ -113,7 +113,7 @@ RenderPassReflection DeferredCapturePass::reflect(const CompileData& compileData
     reflector.addOutput("normalsOut", "World-space normal, [0,1] range.").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
     reflector.addOutput("viewDirsOut", "View directions").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
-    reflector.addOutput("roughOpacOut", "Roughness and opacity in dedicated texture").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    reflector.addOutput("roughOpacVisOut", "Roughness and opacity and visibility in dedicated texture").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     return reflector;
 }
 
@@ -124,13 +124,18 @@ void DeferredCapturePass::execute(RenderContext* pRenderContext, const RenderDat
     const auto& normalsOut = renderData["normalsOut"]->asTexture();
     const auto& viewDirsOut = renderData["viewDirsOut"]->asTexture();
     const auto& viewNormalsOut = renderData["viewNormalsOut"]->asTexture();
-    const auto& roughOpacOut = renderData["roughOpacOut"]->asTexture();
+    const auto& roughOpacVisOut = renderData["roughOpacVisOut"]->asTexture();
 
     mpFbo->attachColorTarget(output, 0);
     mpFbo->attachColorTarget(normalsOut, 1);
     mpFbo->attachColorTarget(viewDirsOut, 2);
     mpFbo->attachColorTarget(viewNormalsOut, 3);
-    mpFbo->attachColorTarget(roughOpacOut, 4);
+    mpFbo->attachColorTarget(roughOpacVisOut, 4);
+
+    for (int i = 1; i < 5; i++)
+    {
+        pRenderContext->clearRtv(mpFbo->getRenderTargetView(i).get(), float4(0,0,0,1));
+    }
 
     if (mpScene)
     {
@@ -235,16 +240,14 @@ void DeferredCapturePass::execute(RenderContext* pRenderContext, const RenderDat
                     std::filesystem::path emissiveFile = targetPath / ("emissive_" + dumpRateNames[0] + fileEnding);
                     std::filesystem::path viewFile = targetPath / ("view_" + dumpRateNames[0] + fileEnding);
                     std::filesystem::path normalFile = targetPath / ("normal_" + dumpRateNames[0] + fileEnding);
-                    std::filesystem::path roughOpacFile = targetPath / ("roughness-opacity_" + dumpRateNames[0] + fileEnding);
-                    std::filesystem::path visibilityFile = targetPath / ("visibility_" + dumpRateNames[0] + fileEnding);
+                    std::filesystem::path roughOpacVisFile = targetPath / ("roughness-opacity-visibility_" + dumpRateNames[0] + fileEnding);
 
                     diffuseOpacity->captureToFile(0, 0, diffuseOpacityFile.string(), dumpFormat);
                     specRough->captureToFile(0, 0, specRoughFile.string(), dumpFormat);
                     emissive->captureToFile(0, 0, emissiveFile.string(), dumpFormat);
                     viewDirsOut->captureToFile(0, 0, viewFile.string(), dumpFormat);
                     viewNormalsOut->captureToFile(0, 0, normalFile.string(), dumpFormat);
-                    roughOpacOut->captureToFile(0, 0, roughOpacFile.string(), dumpFormat);
-                    visibility->captureToFile(0, 0, visibilityFile.string(), dumpFormat);
+                    roughOpacVisOut->captureToFile(0, 0, roughOpacVisFile.string(), dumpFormat);
 
                     for (int i = 0; i < sizeof(dumpRates) / sizeof(dumpRates[0]); i++)
                     {
