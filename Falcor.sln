@@ -84,13 +84,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MegakernelPathTracer", "Sou
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "WhittedRayTracer", "Source\RenderPasses\WhittedRayTracer\WhittedRayTracer.vcxproj", "{431C3127-E613-424C-B964-FB53DAA87789}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ExampleBlitPass", "Source\RenderPasses\ExampleBlitPass\ExampleBlitPass.vcxproj", "{B878C07F-6176-4355-9281-694158E80B30}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "DeferredCapturePass", "Source\RenderPasses\ExampleBlitPass\ExampleBlitPass.vcxproj", "{B878C07F-6176-4355-9281-694158E80B30}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SceneWritePass", "Source\RenderPasses\SceneWritePass\SceneWritePass.vcxproj", "{A2CB8652-26CA-482A-B3C7-F5EE74FC3481}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RemoteRenderPass", "Source\RenderPasses\RemoteRenderPass\RemoteRenderPass.vcxproj", "{123F0D99-34D2-4A01-8AA1-6618DDEDE028}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CSM2", "Source\RenderPasses\CSM2\CSM2.vcxproj", "{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -441,16 +439,6 @@ Global
 		{123F0D99-34D2-4A01-8AA1-6618DDEDE028}.Release|x64.Build.0 = Release|x64
 		{123F0D99-34D2-4A01-8AA1-6618DDEDE028}.ReleaseD3D12|x64.ActiveCfg = Release|x64
 		{123F0D99-34D2-4A01-8AA1-6618DDEDE028}.ReleaseD3D12|x64.Build.0 = Release|x64
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}.Debug|x64.ActiveCfg = Debug|x64
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}.Debug|x64.Build.0 = Debug|x64
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}.DebugD3D12|x64.ActiveCfg = Debug|x64
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}.DebugD3D12|x64.Build.0 = Debug|x64
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}.DebugVK|x64.ActiveCfg = DebugVK|x64
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}.DebugVK|x64.Build.0 = DebugVK|x64
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}.Release|x64.ActiveCfg = Release|x64
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}.Release|x64.Build.0 = Release|x64
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}.ReleaseD3D12|x64.ActiveCfg = Release|x64
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA}.ReleaseD3D12|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -489,7 +477,6 @@ Global
 		{B878C07F-6176-4355-9281-694158E80B30} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{A2CB8652-26CA-482A-B3C7-F5EE74FC3481} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 		{123F0D99-34D2-4A01-8AA1-6618DDEDE028} = {D16038A7-B031-4181-B4A1-2C416C02330C}
-		{618AC068-D44A-43E8-90F0-3E9AC62B5CEA} = {D16038A7-B031-4181-B4A1-2C416C02330C}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {357B2AE0-FE30-4AC6-8D41-B580232BC0DE}

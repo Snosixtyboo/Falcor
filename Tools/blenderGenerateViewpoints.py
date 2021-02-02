@@ -483,6 +483,8 @@ class FixSelectedOperator(bpy.types.Operator):
     def execute(self, context):
         toFix = len(bpy.context.selected_objects)
         for obj in bpy.context.selected_objects:
+            for c in obj.children:
+                bpy.data.objects.remove(c)
             bpy.data.objects.remove(obj)
         remoteSock = None
         if bpy.context.scene.remoteRenderProp: 
