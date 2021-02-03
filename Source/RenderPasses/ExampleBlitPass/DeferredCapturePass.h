@@ -34,6 +34,8 @@ private:
     D3D12_SHADING_RATE activeRate = D3D12_SHADING_RATE_1X1;
     ID3D12GraphicsCommandList5Ptr commandList5;
 
+    glm::mat4x4 prevVP;
+
     // Constants used in derived classes
     static const ChannelList kGBufferChannels;
 

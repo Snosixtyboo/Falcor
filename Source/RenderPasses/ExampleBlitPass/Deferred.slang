@@ -2,10 +2,13 @@ import Utils.Color.ColorHelpers;
 import Scene.Lights.LightData;
 import Scene.Lights.LightProbeData;
 import Scene.Shading;
+import Utils.Helpers;
 
 cbuffer PerFrameCB
 {
 	matrix <float, 4, 4> world2View;
+    matrix <float, 4, 4> prevVP;
+    matrix <float, 4, 4> currVP;
 	float3 cameraPosition;
 	int lightCount;
 };
@@ -34,6 +37,7 @@ struct PsOut
 	float4 viewDir : SV_TARGET2;
 	float4 viewNormal : SV_TARGET3;
     float4 roughOpacVis : SV_TARGET4;
+    float4 mVec : SV_TARGET5;
 };
 
 
@@ -52,6 +56,12 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
     {
         discard;
     }
+
+    float4 v1 = mul(float4(sd.posW.xyz, 1), prevVP);
+    float4 v2 = mul(float4(sd.posW.xyz, 1), currVP);
+    float2 prevCrd = (v1.xy / v1.w) * float2(0.5, -0.5) + 0.5f;
+    float2 currCrd = (v2.xy / v2.w) * float2(0.5, -0.5) + 0.5f;
+    const float2 mVec = prevCrd - currCrd;
 
     sd.V = normalize(cameraPosition - sd.posW);
     sd.N = normalize(gNormW.SampleLevel(gSampler, texC, 0).xyz);
@@ -91,6 +101,7 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET
 	{
 		psOut.viewDir = mul(float4(sd.V, 0.0f), world2View);
 	}
+    psOut.mVec = float4(mVec, 0, 0);
     psOut.roughOpacVis = float4(sd.linearRoughness, sd.opacity, vis, 0);
 	psOut.viewNormal = mul(float4(sd.N, 0.0f), world2View);
     return psOut;

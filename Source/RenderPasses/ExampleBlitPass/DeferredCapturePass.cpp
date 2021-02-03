@@ -114,6 +114,7 @@ RenderPassReflection DeferredCapturePass::reflect(const CompileData& compileData
     reflector.addOutput("viewDirsOut", "View directions").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addOutput("roughOpacVisOut", "Roughness and opacity and visibility in dedicated texture").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    reflector.addOutput("motionVecsOut", "Motion vectors").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     return reflector;
 }
 
@@ -125,14 +126,16 @@ void DeferredCapturePass::execute(RenderContext* pRenderContext, const RenderDat
     const auto& viewDirsOut = renderData["viewDirsOut"]->asTexture();
     const auto& viewNormalsOut = renderData["viewNormalsOut"]->asTexture();
     const auto& roughOpacVisOut = renderData["roughOpacVisOut"]->asTexture();
+    const auto& motionVecsOut = renderData["motionVecsOut"]->asTexture();
 
     mpFbo->attachColorTarget(output, 0);
     mpFbo->attachColorTarget(normalsOut, 1);
     mpFbo->attachColorTarget(viewDirsOut, 2);
     mpFbo->attachColorTarget(viewNormalsOut, 3);
     mpFbo->attachColorTarget(roughOpacVisOut, 4);
+    mpFbo->attachColorTarget(motionVecsOut, 5);
 
-    for (int i = 1; i < 5; i++)
+    for (int i = 1; i < 6; i++)
     {
         pRenderContext->clearRtv(mpFbo->getRenderTargetView(i).get(), float4(0,0,0,1));
     }
@@ -163,6 +166,9 @@ void DeferredCapturePass::execute(RenderContext* pRenderContext, const RenderDat
 
         pCB["cameraPosition"] = mpScene->getCamera()->getPosition();
         pCB["world2View"] = mpScene->getCamera()->getViewMatrix();
+
+        pCB["currVP"] = mpScene->getCamera()->getViewProjMatrix();
+        pCB["prevVP"] = prevVP;
 
         mpPass->execute(pRenderContext, mpFbo);
 
@@ -214,16 +220,11 @@ void DeferredCapturePass::execute(RenderContext* pRenderContext, const RenderDat
 
                 if (doingPrevious)
                 {
-                    if (!std::filesystem::create_directory(targetPath))
+                    prevVP = mpScene->getCamera()->getViewProjMatrix();
+
+                    while (!std::filesystem::create_directory(targetPath))
                     {
-                        if (viewpointMethod == ViewpointGeneration::FromFile) {
-                            viewPointToCapture--;
-                        }
                         logError("Failed to create directory " + targetPath.string() + " for frame dumps!", Logger::MsgBox::RetryAbort);
-                        commandList5->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
-                        gpFramework->pauseRenderer(false);
-                        gpFramework->getGlobalClock().play();
-                        return;
                     }
 
                     doingPrevious = false;
@@ -241,6 +242,7 @@ void DeferredCapturePass::execute(RenderContext* pRenderContext, const RenderDat
                     std::filesystem::path viewFile = targetPath / ("view_" + dumpRateNames[0] + fileEnding);
                     std::filesystem::path normalFile = targetPath / ("normal_" + dumpRateNames[0] + fileEnding);
                     std::filesystem::path roughOpacVisFile = targetPath / ("roughness-opacity-visibility_" + dumpRateNames[0] + fileEnding);
+                    std::filesystem::path motionVecsFile = targetPath / ("motionvector_" + dumpRateNames[0] + fileEnding);
 
                     diffuseOpacity->captureToFile(0, 0, diffuseOpacityFile.string(), dumpFormat);
                     specRough->captureToFile(0, 0, specRoughFile.string(), dumpFormat);
@@ -248,6 +250,7 @@ void DeferredCapturePass::execute(RenderContext* pRenderContext, const RenderDat
                     viewDirsOut->captureToFile(0, 0, viewFile.string(), dumpFormat);
                     viewNormalsOut->captureToFile(0, 0, normalFile.string(), dumpFormat);
                     roughOpacVisOut->captureToFile(0, 0, roughOpacVisFile.string(), dumpFormat);
+                    motionVecsOut->captureToFile(0, 0, motionVecsFile.string(), dumpFormat);
 
                     for (int i = 0; i < sizeof(dumpRates) / sizeof(dumpRates[0]); i++)
                     {
