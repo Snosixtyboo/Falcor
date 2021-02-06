@@ -48,7 +48,7 @@ private:
     int numLights;
     ShaderVar lightsBufferVar;
     Buffer::SharedPtr mpLightsBuffer;
-    LightProbe::SharedPtr lightProbe;
+    EnvMap::SharedPtr lightProbe;
 
     DeferredCapturePass();
     void loadViewPoints();

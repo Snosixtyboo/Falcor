@@ -80,7 +80,7 @@ void DeferredCapturePass::setScene(RenderContext* pRenderContext, const Scene::S
                 mpLightsBuffer->setElement(l, light->getData());
             }
 
-            lightProbe = pScene->getLightProbe();
+            lightProbe = pScene->getEnvMap();
             if (lightProbe)
             {
                 lightProbe->setShaderData(mpSceneBlock["lightProbe"]);

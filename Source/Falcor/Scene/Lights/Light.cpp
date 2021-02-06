@@ -62,7 +62,7 @@ namespace Falcor
     {
         std::string c;
 
-        c += Scripting::makeSetProperty(lightVar, "active", isActive());
+        c += ScriptWriter::makeSetProperty(lightVar, "active", isActive());
 
         return c;
     }
