@@ -19,3 +19,4 @@ Tools/.packman
 Tests/data
 Scenes/
 Samples/
+*.tlog

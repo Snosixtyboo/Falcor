@@ -47,16 +47,14 @@ namespace Falcor
     // Default dimensions of full frame cameras and 35mm film
     const float Camera::kDefaultFrameHeight = 24.0f;
 
-    Camera::Camera()
+    Camera::Camera(const std::string& name)
+        : mName(name)
     {
     }
 
-    Camera::~Camera() = default;
-
-    Camera::SharedPtr Camera::create()
+    Camera::SharedPtr Camera::create(const std::string& name)
     {
-        Camera* pCamera = new Camera;
-        return SharedPtr(pCamera);
+        return SharedPtr(new Camera(name));
     }
 
     Camera::Changes Camera::beginFrame(bool firstFrame)
@@ -80,6 +78,7 @@ namespace Falcor
         if (firstFrame) mPrevData = mData;
 
         // Keep copies of the transforms used for the previous frame. We need these for computing motion vectors etc.
+        mData.prevViewMat = mPrevData.viewMat;
         mData.prevViewProjMatNoJitter = mPrevData.viewProjMatNoJitter;
 
         mChanges = is_set(mChanges, Changes::Movement | Changes::Frustum) ? Changes::History : Changes::None;
@@ -204,6 +203,11 @@ namespace Falcor
         return mData.viewMat;
     }
 
+    const glm::mat4& Camera::getPrevViewMatrix() const
+    {
+        return mData.prevViewMat;
+    }
+
     const glm::mat4& Camera::getProjMatrix() const
     {
         calculateCameraParameters();
@@ -246,7 +250,7 @@ namespace Falcor
         mEnablePersistentViewMat = persistent;
     }
 
-    bool Camera::isObjectCulled(const BoundingBox& box) const
+    bool Camera::isObjectCulled(const AABB& box) const
     {
         calculateCameraParameters();
 
@@ -255,8 +259,8 @@ namespace Falcor
         // See method 4b: https://fgiesen.wordpress.com/2010/10/17/view-frustum-culling/
         for (int plane = 0; plane < 6; plane++)
         {
-            float3 signedExtent = box.extent * mFrustumPlanes[plane].sign;
-            float dr = glm::dot(box.center + signedExtent, mFrustumPlanes[plane].xyz);
+            float3 signedHalfExtent = 0.5f * box.extent() * mFrustumPlanes[plane].sign;
+            float dr = glm::dot(box.center() + signedHalfExtent, mFrustumPlanes[plane].xyz);
             isInside = isInside && (dr > mFrustumPlanes[plane].negW);
         }
 
@@ -354,14 +358,14 @@ namespace Falcor
 
         if (hasAnimation() && !isAnimated())
         {
-            c += Scripting::makeSetProperty(cameraVar, kAnimated, false);
+            c += ScriptWriter::makeSetProperty(cameraVar, kAnimated, false);
         }
 
         if (!hasAnimation() || !isAnimated())
         {
-            c += Scripting::makeSetProperty(cameraVar, kPosition, getPosition());
-            c += Scripting::makeSetProperty(cameraVar, kTarget, getTarget());
-            c += Scripting::makeSetProperty(cameraVar, kUp, getUpVector());
+            c += ScriptWriter::makeSetProperty(cameraVar, kPosition, getPosition());
+            c += ScriptWriter::makeSetProperty(cameraVar, kTarget, getTarget());
+            c += ScriptWriter::makeSetProperty(cameraVar, kUp, getUpVector());
         }
 
         c += Scripting::makeSetProperty(cameraVar, "nearPlane", getNearPlane());
@@ -373,7 +377,7 @@ namespace Falcor
     SCRIPT_BINDING(Camera)
     {
         pybind11::class_<Camera, Animatable, Camera::SharedPtr> camera(m, "Camera");
-        camera.def_property_readonly("name", &Camera::getName);
+        camera.def_property("name", &Camera::getName, &Camera::setName);
         camera.def_property("aspectRatio", &Camera::getAspectRatio, &Camera::setAspectRatio);
         camera.def_property("focalLength", &Camera::getFocalLength, &Camera::setFocalLength);
         camera.def_property("frameHeight", &Camera::getFrameHeight, &Camera::setFrameHeight);
@@ -387,5 +391,6 @@ namespace Falcor
         camera.def_property(kPosition.c_str(), &Camera::getPosition, &Camera::setPosition);
         camera.def_property(kTarget.c_str(), &Camera::getTarget, &Camera::setTarget);
         camera.def_property(kUp.c_str(), &Camera::getUpVector, &Camera::setUpVector);
+        camera.def(pybind11::init(&Camera::create), "name"_a = "");
     }
 }
