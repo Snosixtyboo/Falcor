@@ -6,7 +6,4 @@
   <ItemGroup>
     <ClCompile Include="CapturePass.cpp" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="Capture.slang" />
-  </ItemGroup>
 </Project>

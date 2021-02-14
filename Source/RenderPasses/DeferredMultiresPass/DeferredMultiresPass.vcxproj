@@ -19,7 +19,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ExampleBlitPass</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
-    <ProjectName>DeferredLightingPass</ProjectName>
+    <ProjectName>DeferredMultiresPass</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -37,13 +37,13 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DeferredLightingPass.h" />
+    <ClCompile Include="DeferredMultiresPass.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="DeferredLightingPass.cpp" />
+    <ClInclude Include="DeferredMultiresPass.h" />
   </ItemGroup>
   <ItemGroup>
-    <ShaderSource Include="DeferredLightingPass.slang" />
+    <None Include="DeferredMultiresPass.slang" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>

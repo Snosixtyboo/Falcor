@@ -32,7 +32,7 @@ struct PsOut {
 	float4 color : SV_TARGET0;
 	float4 normal : SV_TARGET1;
 	float4 viewNormal : SV_TARGET2;
-	float4 roughOpacVis : SV_TARGET3;
+	float4 extra : SV_TARGET3;
 	float4 motion : SV_TARGET4;
 };
 
@@ -50,9 +50,9 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET {
 
   float4 v1 = mul(float4(sd.posW.xyz, 1), prevVP);
   float4 v2 = mul(float4(sd.posW.xyz, 1), currVP);
-  float2 prevCrd = (v1.xy / v1.w) * float2(0.5, -0.5) + 0.5f;
-  float2 currCrd = (v2.xy / v2.w) * float2(0.5, -0.5) + 0.5f;
-  const float2 motion = prevCrd - currCrd;
+  float2 prevCrd = (v1.xy / v1.w) * float2(0.5, -0.5);
+  float2 currCrd = (v2.xy / v2.w) * float2(0.5, -0.5);
+  float2 motion = prevCrd - currCrd;
 
 	float4 diffuseOp = gDiffuse.SampleLevel(gSampler, texC, 0);
 	float4 specRough = gSpecRough.SampleLevel(gSampler, texC, 0);
@@ -86,8 +86,9 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET {
 
 	psOut.color = finalColor;
 	psOut.normal = float4(sd.N * 0.5f + 0.5f, 1.0f);
-	psOut.motion = float4(motion, 0, 0);
-	psOut.roughOpacVis = float4(sd.linearRoughness, sd.opacity, vis, 0);
 	psOut.viewNormal = mul(float4(sd.N, 0.0f), world2View);
+	psOut.motion = float4(motion * 0.5f + 0.5f, 0, 0);
+	psOut.extra = float4(sd.linearRoughness, sd.opacity, vis, 0);
+
 	return psOut;
 }

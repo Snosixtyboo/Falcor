@@ -4,6 +4,7 @@ import os
 
 def render_graph_DefaultRenderGraph():
     g = RenderGraph('RemoteRenderGraph')
+
     loadRenderPassLibrary('AccumulatePass.dll')
     loadRenderPassLibrary('BSDFViewer.dll')
     loadRenderPassLibrary('Antialiasing.dll')
@@ -20,29 +21,28 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('SSAO.dll')
     loadRenderPassLibrary('ToneMapper.dll')
     loadRenderPassLibrary('Utils.dll')
-    RemoteRenderPass = createPass('RemoteRenderPass')
-    g.addPass(RemoteRenderPass, 'RemoteRenderPass')
-    DepthPass = createPass('DepthPass', {'depthFormat': ResourceFormat.D32Float})
-    g.addPass(DepthPass, 'DepthPass')
-    ForwardLightingPass = createPass('ForwardLightingPass', {'sampleCount': 1, 'enableSuperSampling': False})
-    g.addPass(ForwardLightingPass, 'ForwardLightingPass')
-    ToneMapper = createPass('ToneMapper', {'autoExposure': True})
-    CSM = createPass('CSM')
-    g.addPass(CSM, 'CSM')
-    g.addPass(ToneMapper, 'ToneMapper')
+
+    g.addPass(createPass('RemoteRenderPass'), 'RemoteRenderPass')
+    g.addPass(createPass('DepthPass', {'depthFormat': ResourceFormat.D32Float}), 'DepthPass')
+    g.addPass(createPass('ForwardLightingPass', {'sampleCount': 1, 'enableSuperSampling': False}), 'ForwardLightingPass')
+    g.addPass(createPass('CSM'), 'CSM')
+    g.addPass(createPass('ToneMapper', {'autoExposure': True}), 'ToneMapper')
     g.addEdge('DepthPass.depth', 'ForwardLightingPass.depth')
     g.addEdge('DepthPass.depth', 'RemoteRenderPass.depth')
     g.addEdge('RemoteRenderPass.target', 'ForwardLightingPass.color')
     g.addEdge('ForwardLightingPass.color', 'ToneMapper.src')
     g.addEdge('DepthPass.depth', 'CSM.depth')
     g.addEdge('CSM.visibility', 'ForwardLightingPass.visibilityBuffer')
+
     g.markOutput('ToneMapper.dst')
     return g
+    
 m.addGraph(render_graph_DefaultRenderGraph())
 
 # Scene
-BASE_PATH = os.getenv('FALCOR_DATA').strip("/")
-m.loadScene(BASE_PATH + '/SunTemple_v3/SunTemple/SunTemple2.fscene')
+#BASE_PATH = os.getenv('FALCOR_DATA').strip("/")
+#m.loadScene(BASE_PATH + '/SunTemple_v3/SunTemple/SunTemple2.fscene')
+m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/SunTemple/SunTemple.fscene')
 m.scene.renderSettings = SceneRenderSettings(useEnvLight=True, useAnalyticLights=True, useEmissiveLights=True)
 m.scene.camera.position = float3(0.017157,3.184416,71.125000)
 m.scene.camera.target = float3(0.008678,3.202756,70.125206)
@@ -64,4 +64,3 @@ t.framerate = 0
 # Frame Capture
 fc.outputDir = '.'
 fc.baseFilename = 'Mogwai'
-
