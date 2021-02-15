@@ -13,6 +13,7 @@ private:
     GraphicsVars::SharedPtr mpVars;
     Scene::SharedPtr mpScene;
     ParameterBlock::SharedPtr mpSceneBlock;
+    ID3D12GraphicsCommandList5Ptr directX;
     glm::mat4x4 prevVP; // TODO
 
     int numLights;
@@ -22,9 +23,10 @@ private:
     DeferredMultiresPass();
 
 public:
+    struct ShadingRate { D3D12_SHADING_RATE id; std::string name; };
     using SharedPtr = std::shared_ptr<DeferredMultiresPass>;
-    static SharedPtr create(RenderContext* pRenderContext = nullptr, const Dictionary& dict = {});
 
+    static SharedPtr create(RenderContext* pRenderContext = nullptr, const Dictionary& dict = {});
     virtual std::string getDesc() override { return "Deferred rasterization at multiple shading rates."; }
     virtual Dictionary getScriptingDictionary() override;
     virtual RenderPassReflection reflect(const CompileData& compileData) override;

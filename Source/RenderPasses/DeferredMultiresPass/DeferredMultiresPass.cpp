@@ -14,6 +14,13 @@ const ChannelList kGBufferChannels =
     { "emissive",       "gEmissive",        "emissive color",               true},
 };
 
+const DeferredMultiresPass::ShadingRate kRates[3] =
+{
+    {D3D12_SHADING_RATE_4X4, "color4x4"},
+    {D3D12_SHADING_RATE_2X2, "color2x2"},
+    {D3D12_SHADING_RATE_1X1, "color1x1"}
+};
+
 // Don't remove this. it's required for hot-reload to function properly
 extern "C" __declspec(dllexport) const char* getProjDir()
 {
@@ -22,7 +29,7 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
-    lib.registerClass("DeferredMultiresPass", "Uses gbuffer data to compute a rasterized shading result.", DeferredMultiresPass::create);
+    lib.registerClass("DeferredMultiresPass", "Computes deferred rasterization at multiple shading rates.", DeferredMultiresPass::create);
 }
 
 DeferredMultiresPass::DeferredMultiresPass()
@@ -82,11 +89,14 @@ Dictionary DeferredMultiresPass::getScriptingDictionary()
 RenderPassReflection DeferredMultiresPass::reflect(const CompileData& compileData)
 {
     RenderPassReflection reflector;
-
     addRenderPassInputs(reflector, kGBufferChannels);
-    reflector.addInputOutput("color", "the color texture").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
-    reflector.addInput("visibility", "Visibility buffer used for shadowing. Range is [0,1] where 0 means the pixel is fully-shadowed and 1 means the pixel is not shadowed at all").flags(RenderPassReflection::Field::Flags::Optional);
-    reflector.addOutput("normalsOut", "World-space normal, [0,1] range.").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
+
+    for (const auto& rate : kRates) {
+      reflector.addInputOutput(rate.name, "Shading color").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1).flags(RenderPassReflection::Field::Flags::Optional);
+    }
+
+    reflector.addInput("visibility", "Visibility buffer used for shadowing").flags(RenderPassReflection::Field::Flags::Optional);
+    reflector.addOutput("normalsOut", "Normalized world-space normal").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
     reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addOutput("extraOut", "Roughness, opacity and visibility in dedicated texture").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addOutput("motionOut", "Motion vectors").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
@@ -95,17 +105,16 @@ RenderPassReflection DeferredMultiresPass::reflect(const CompileData& compileDat
 
 void DeferredMultiresPass::execute(RenderContext* pRenderContext, const RenderData& renderData)
 {
-    mpFbo->attachColorTarget(renderData["color"]->asTexture(), 0);
-    mpFbo->attachColorTarget(renderData["normalsOut"]->asTexture(), 1);
-    mpFbo->attachColorTarget(renderData["viewNormalsOut"]->asTexture(), 2);
-    mpFbo->attachColorTarget(renderData["extraOut"]->asTexture(), 3);
-    mpFbo->attachColorTarget(renderData["motionOut"]->asTexture(), 4);
-
-    for (int i = 1; i < 5; i++) {
-        pRenderContext->clearRtv(mpFbo->getRenderTargetView(i).get(), float4(0,0,0,1));
-    }
-
     if (mpScene) {
+        mpFbo->attachColorTarget(renderData["normalsOut"]->asTexture(), 1);
+        mpFbo->attachColorTarget(renderData["viewNormalsOut"]->asTexture(), 2);
+        mpFbo->attachColorTarget(renderData["extraOut"]->asTexture(), 3);
+        mpFbo->attachColorTarget(renderData["motionOut"]->asTexture(), 4);
+
+        for (int i = 1; i < 5; i++) {
+            pRenderContext->clearRtv(mpFbo->getRenderTargetView(i).get(), float4(0,0,0,1));
+        }
+
         mpPass["gPosW"] = renderData["posW"]->asTexture();
         mpPass["gNormW"] = renderData["normW"]->asTexture();;
         mpPass["gDiffuse"] = renderData["diffuseOpacity"]->asTexture();;
@@ -114,7 +123,7 @@ void DeferredMultiresPass::execute(RenderContext* pRenderContext, const RenderDa
         mpPass["gVisibility"] = renderData["visibility"]->asTexture();
         mpPass["lights"] = mpLightsBuffer;
 
-        auto currVP = mpScene->getCamera()->getViewProjMatrix();
+        const auto& currVP = mpScene->getCamera()->getViewProjMatrix();
         auto pCB = mpPass["PerFrameCB"];
 
         pCB["lightCount"] = numLights;
@@ -123,7 +132,22 @@ void DeferredMultiresPass::execute(RenderContext* pRenderContext, const RenderDa
         pCB["currVP"] = currVP;
         pCB["prevVP"] = prevVP;
 
+        d3d_call(pRenderContext->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
+        /*for (const auto& rate : kRates) {
+          directX->RSSetShadingRate(rate.id, nullptr);
+          pRenderContext->clearRtv(mpFbo->getRenderTargetView(0).get(), float4(0,0,0,1));
+          mpFbo->attachColorTarget(renderData[rate.name]->asTexture(), 0);
+          mpPass->execute(pRenderContext, mpFbo);
+        }*/
+
+        directX->RSSetShadingRate(D3D12_SHADING_RATE_2X2, nullptr);
+        mpFbo->attachColorTarget(renderData["color2x2"]->asTexture(), 0);
         mpPass->execute(pRenderContext, mpFbo);
+
+        directX->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
+        mpFbo->attachColorTarget(renderData["color1x1"]->asTexture(), 0);
+        mpPass->execute(pRenderContext, mpFbo);
+
         prevVP = currVP;
     }
 }
