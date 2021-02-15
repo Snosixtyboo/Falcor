@@ -29,7 +29,7 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
-    lib.registerClass("DeferredMultiresPass", "Computes deferred rasterization at multiple shading rates.", DeferredMultiresPass::create);
+    lib.registerClass("DeferredMultiresPass", "Deferred rasterization at multiple shading rates.", DeferredMultiresPass::create);
 }
 
 DeferredMultiresPass::DeferredMultiresPass()
