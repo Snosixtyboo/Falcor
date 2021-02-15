@@ -35,8 +35,6 @@ m.ui = True
 # Time Settings
 t.time = 0
 t.framerate = 0
-# If framerate is not zero, you can use the frame property to set the start frame
-# t.frame = 0
 
 # Frame Capture
 fc.outputDir = '.'
@@ -60,14 +58,12 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('ToneMapper.dll')
     loadRenderPassLibrary('Utils.dll')
 
-    g.addPass(createPass('DeferredMultiresPass'), 'DeferredMultires')
-    g.addPass(createPass('SSAO'), 'SSAO')
-    g.addPass(createPass('SkyBox'), 'SkyBox')
-    g.addPass(createPass('FXAA'), 'FXAA')
-    g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'GBufferRaster')
     g.addPass(createPass('CSM'), 'CSM')
-    g.addPass(createPass('ToneMapper', {'autoExposure': True}), 'ToneMapper')
-    #g.addPass(createPass('CapturePass'), 'Capture')
+    g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'GBufferRaster')
+    g.addPass(createPass('DeferredMultiresPass'), 'DeferredMultires')
+
+    g.addEdge('GBufferRaster.depth', 'CSM.depth')
+    g.addEdge('CSM.visibility', 'DeferredMultires.visibility')
 
     g.addEdge('GBufferRaster.posW', 'DeferredMultires.posW')
     g.addEdge('GBufferRaster.normW', 'DeferredMultires.normW')
@@ -75,19 +71,28 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('GBufferRaster.specRough', 'DeferredMultires.specRough')
     g.addEdge('GBufferRaster.emissive', 'DeferredMultires.emissive')
     g.addEdge('GBufferRaster.depth', 'DeferredMultires.depth')
-    g.addEdge('GBufferRaster.depth', 'SkyBox.depth')
-    g.addEdge('GBufferRaster.depth', 'SSAO.depth')
-    g.addEdge('GBufferRaster.depth', 'CSM.depth')
 
-    g.addEdge('SkyBox.target', 'DeferredMultires.color1x1')
-    g.addEdge('CSM.visibility', 'DeferredMultires.visibility')
+    tonemap = createPass('ToneMapper', {'autoExposure': True})
+    skybox = createPass('SkyBox')
+    ssao = createPass('SSAO')
+    fxaa = createPass('FXAA')
 
-    g.addEdge('DeferredMultires.normalsOut', 'SSAO.normals')
-    g.addEdge('DeferredMultires.color1x1', 'ToneMapper.src')
-    g.addEdge('ToneMapper.dst', 'SSAO.colorIn')
-    g.addEdge('SSAO.colorOut', 'FXAA.src')
-    g.markOutput('FXAA.dst')
+    for x in ['1x1', '2x2', '4x4']:
+        g.addPass(skybox, f'SkyBox{x}')
+        g.addPass(ssao, f'SSAO{x}')
+        g.addPass(tonemap, f'ToneMapper{x}')
+        g.addPass(fxaa, f'FXAA{x}')
 
+        g.addEdge('GBufferRaster.depth', f'SSAO{x}.depth')
+        g.addEdge('GBufferRaster.depth', f'SkyBox{x}.depth')
+        g.addEdge(f'SkyBox{x}.target', f'DeferredMultires.color{x}')
+        
+        g.addEdge('DeferredMultires.normalsOut', f'SSAO{x}.normals')
+        g.addEdge(f'DeferredMultires.color{x}', f'ToneMapper{x}.src')
+        g.addEdge(f'ToneMapper{x}.dst', f'SSAO{x}.colorIn')
+        g.addEdge(f'SSAO{x}.colorOut', f'FXAA{x}.src')
+
+    g.markOutput('FXAA1x1.dst')
     return g
 
 m.addGraph(render_graph_DefaultRenderGraph())

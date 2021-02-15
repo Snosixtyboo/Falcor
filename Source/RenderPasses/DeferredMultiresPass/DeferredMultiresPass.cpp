@@ -92,7 +92,7 @@ RenderPassReflection DeferredMultiresPass::reflect(const CompileData& compileDat
     addRenderPassInputs(reflector, kGBufferChannels);
 
     for (const auto& rate : kRates) {
-      reflector.addInputOutput(rate.name, "Shading color").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1).flags(RenderPassReflection::Field::Flags::Optional);
+      reflector.addInputOutput(rate.name, "Shading color").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     }
 
     reflector.addInput("visibility", "Visibility buffer used for shadowing").flags(RenderPassReflection::Field::Flags::Optional);
@@ -133,20 +133,11 @@ void DeferredMultiresPass::execute(RenderContext* pRenderContext, const RenderDa
         pCB["prevVP"] = prevVP;
 
         d3d_call(pRenderContext->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
-        /*for (const auto& rate : kRates) {
+        for (const auto& rate : kRates) {
           directX->RSSetShadingRate(rate.id, nullptr);
-          pRenderContext->clearRtv(mpFbo->getRenderTargetView(0).get(), float4(0,0,0,1));
           mpFbo->attachColorTarget(renderData[rate.name]->asTexture(), 0);
           mpPass->execute(pRenderContext, mpFbo);
-        }*/
-
-        directX->RSSetShadingRate(D3D12_SHADING_RATE_2X2, nullptr);
-        mpFbo->attachColorTarget(renderData["color2x2"]->asTexture(), 0);
-        mpPass->execute(pRenderContext, mpFbo);
-
-        directX->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
-        mpFbo->attachColorTarget(renderData["color1x1"]->asTexture(), 0);
-        mpPass->execute(pRenderContext, mpFbo);
+        }
 
         prevVP = currVP;
     }
