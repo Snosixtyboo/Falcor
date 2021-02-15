@@ -86,13 +86,13 @@ def render_graph_DefaultRenderGraph():
         g.addEdge('GBufferRaster.depth', f'SSAO{x}.depth')
         g.addEdge('GBufferRaster.depth', f'SkyBox{x}.depth')
         g.addEdge(f'SkyBox{x}.target', f'DeferredMultires.color{x}')
-        
+
         g.addEdge('DeferredMultires.normalsOut', f'SSAO{x}.normals')
         g.addEdge(f'DeferredMultires.color{x}', f'ToneMapper{x}.src')
         g.addEdge(f'ToneMapper{x}.dst', f'SSAO{x}.colorIn')
         g.addEdge(f'SSAO{x}.colorOut', f'FXAA{x}.src')
+        g.markOutput(f'FXAA{x}.dst')
 
-    g.markOutput('FXAA1x1.dst')
     return g
 
 m.addGraph(render_graph_DefaultRenderGraph())
