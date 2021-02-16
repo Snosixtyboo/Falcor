@@ -34,15 +34,16 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 
 DeferredMultiresPass::DeferredMultiresPass()
 {
-    mpPass = FullScreenPass::create(kShaderFilename);
-    mpFbo = Fbo::create();
-    Sampler::Desc samplerDesc;
-    samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
-    mpPass["gSampler"] = Sampler::create(samplerDesc);
+    Sampler::Desc sampling;
+    sampling.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
 
-    mpVars = GraphicsVars::create(mpPass->getProgram()->getReflector());
+    mpFbo = Fbo::create();
+    mpPass = FullScreenPass::create(kShaderFilename);
+    mpPass["gSampler"] = Sampler::create(sampling);
+
     ParameterBlockReflection::SharedConstPtr pReflection = mpPass->getProgram()->getReflector()->getParameterBlock("tScene");
     mpSceneBlock = ParameterBlock::create(pReflection);
+    mpVars = GraphicsVars::create(mpPass->getProgram()->getReflector());
 }
 
 

@@ -3,9 +3,8 @@ from falcor import *
 import os
 
 # Scene
-#BASE_PATH = os.getenv('FALCOR_DATA').strip("/")
-#m.loadScene(BASE_PATH + '/SunTemple_v3/SunTemple/SunTemple2.fscene')
-m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/SunTemple/SunTemple.fscene')
+m.loadScene(os.getenv('FALCOR_DATA').strip('/') + '/SunTemple_v3/SunTemple/SunTemple2.fscene')
+#m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/SunTemple/SunTemple.fscene')
 m.scene.renderSettings = SceneRenderSettings(useEnvLight=True, useAnalyticLights=True, useEmissiveLights=True)
 m.scene.camera.position = float3(0.017157,3.184416,71.125000)
 m.scene.camera.target = float3(-0.021863,3.224318,70.126556)
@@ -42,25 +41,20 @@ fc.baseFilename = 'Mogwai'
 
 def render_graph_DefaultRenderGraph():
     g = RenderGraph('DeferredCaptureGraph')
-    loadRenderPassLibrary('BSDFViewer.dll')
-    loadRenderPassLibrary('AccumulatePass.dll')
-    loadRenderPassLibrary('DepthPass.dll')
     loadRenderPassLibrary('Antialiasing.dll')
-    loadRenderPassLibrary('FeedbackPass.dll')
-    loadRenderPassLibrary('BlitPass.dll')
     loadRenderPassLibrary('CSM.dll')
+    loadRenderPassLibrary('DepthPass.dll')
     loadRenderPassLibrary('DeferredMultiresPass.dll')
-    loadRenderPassLibrary('ForwardLightingPass.dll')
     loadRenderPassLibrary('GBuffer.dll')
-    loadRenderPassLibrary('SceneWritePass.dll')
     loadRenderPassLibrary('SSAO.dll')
     loadRenderPassLibrary('SkyBox.dll')
     loadRenderPassLibrary('ToneMapper.dll')
-    loadRenderPassLibrary('Utils.dll')
+    loadRenderPassLibrary('Reproject.dll')
 
     g.addPass(createPass('CSM'), 'CSM')
     g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'GBufferRaster')
     g.addPass(createPass('DeferredMultiresPass'), 'DeferredMultires')
+    g.addPass(createPass('Reproject'), 'Reproject')
 
     g.addEdge('GBufferRaster.depth', 'CSM.depth')
     g.addEdge('CSM.visibility', 'DeferredMultires.visibility')
@@ -92,6 +86,9 @@ def render_graph_DefaultRenderGraph():
         g.addEdge(f'ToneMapper{x}.dst', f'SSAO{x}.colorIn')
         g.addEdge(f'SSAO{x}.colorOut', f'FXAA{x}.src')
         g.markOutput(f'FXAA{x}.dst')
+
+    g.addEdge('DeferredMultires.motionOut', 'Reproject.motion')
+    g.addEdge('FXAA1x1.dst', 'Reproject.input')
 
     return g
 
