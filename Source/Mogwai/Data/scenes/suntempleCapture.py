@@ -3,8 +3,8 @@ from falcor import *
 import os
 
 # Scene
-m.loadScene(os.getenv('FALCOR_DATA').strip('/') + '/SunTemple_v3/SunTemple/SunTemple2.fscene')
-#m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/SunTemple/SunTemple.fscene')
+#m.loadScene(os.getenv('FALCOR_DATA').strip('/') + '/SunTemple_v3/SunTemple/SunTemple2.fscene')
+m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/SunTemple/SunTemple.fscene')
 m.scene.renderSettings = SceneRenderSettings(useEnvLight=True, useAnalyticLights=True, useEmissiveLights=True)
 m.scene.camera.position = float3(0.017157,3.184416,71.125000)
 m.scene.camera.target = float3(-0.021863,3.224318,70.126556)
@@ -43,6 +43,7 @@ def render_graph_DefaultRenderGraph():
     g = RenderGraph('DeferredCaptureGraph')
     loadRenderPassLibrary('Antialiasing.dll')
     loadRenderPassLibrary('CSM.dll')
+    loadRenderPassLibrary('CapturePass.dll')
     loadRenderPassLibrary('DepthPass.dll')
     loadRenderPassLibrary('DeferredMultiresPass.dll')
     loadRenderPassLibrary('GBuffer.dll')
@@ -52,6 +53,7 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('Reproject.dll')
 
     g.addPass(createPass('CSM'), 'CSM')
+    g.addPass(createPass('CapturePass'), 'Capture')
     g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'GBufferRaster')
     g.addPass(createPass('DeferredMultiresPass'), 'DeferredMultires')
     g.addPass(createPass('Reproject'), 'Reproject')
@@ -71,7 +73,7 @@ def render_graph_DefaultRenderGraph():
     ssao = createPass('SSAO')
     fxaa = createPass('FXAA')
 
-    for x in ['1x1', '2x2', '4x4']:
+    for x in ['1x1', '2x2']:
         g.addPass(skybox, f'SkyBox{x}')
         g.addPass(ssao, f'SSAO{x}')
         g.addPass(tonemap, f'ToneMapper{x}')
@@ -85,11 +87,12 @@ def render_graph_DefaultRenderGraph():
         g.addEdge(f'DeferredMultires.color{x}', f'ToneMapper{x}.src')
         g.addEdge(f'ToneMapper{x}.dst', f'SSAO{x}.colorIn')
         g.addEdge(f'SSAO{x}.colorOut', f'FXAA{x}.src')
-        g.markOutput(f'FXAA{x}.dst')
 
     g.addEdge('DeferredMultires.motionOut', 'Reproject.motion')
     g.addEdge('FXAA1x1.dst', 'Reproject.input')
 
+    g.addEdge('FXAA1x1.dst', 'Capture.color1x1')
+    g.markOutput('Capture.color1x1')
     return g
 
 m.addGraph(render_graph_DefaultRenderGraph())

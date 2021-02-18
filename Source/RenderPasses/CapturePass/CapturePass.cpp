@@ -3,8 +3,17 @@
 #include <string>
 #include <cstdlib>
 
-const std::string kShaderFilename = "RenderPasses/CapturePass/CapturePass.slang";
-const ChannelList CapturePass::kGBufferChannels =
+const Gui::DropdownList ViewpointMethods = {
+    {(uint32_t)CapturePass::ViewpointGeneration::FromFile, "Viewpoint file"},
+    {(uint32_t)CapturePass::ViewpointGeneration::FromGameplay, "Gameplay"}
+};
+
+const CapturePass::ImageFormat ImageFormats[] = {
+    {Bitmap::FileFormat::JpegFile, "jpg"},
+    {Bitmap::FileFormat::PfmFile, "pfm"}
+};
+
+const ChannelList GBufferChannels =
 {
     { "diffuse", "gDiffuseOpacity",        "Diffuse color",    true /* optional */, ResourceFormat::RGBA32Float },
     { "specular",      "gSpecRough",       "Specular color",   true /* optional */, ResourceFormat::RGBA32Float },
@@ -19,131 +28,163 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
-    lib.registerClass("CapturePass", "Writes gbuffer data at multiple shading resolutions to image files.", CapturePass::create);
-}
-
-CapturePass::CapturePass()
-{
-    mpPass = FullScreenPass::create(kShaderFilename);
-    mpFbo = Fbo::create();
-    Sampler::Desc samplerDesc;
-    samplerDesc.setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point);
-    mpPass["gSampler"] = Sampler::create(samplerDesc);
-
-    mpVars = GraphicsVars::create(mpPass->getProgram()->getReflector());
-    ParameterBlockReflection::SharedConstPtr pReflection = mpPass->getProgram()->getReflector()->getParameterBlock("tScene");
-    mpSceneBlock = ParameterBlock::create(pReflection);
+    lib.registerClass("CapturePass", "Dumps rendering data at multiple shading resolutions to image files.", CapturePass::create);
 }
 
 CapturePass::SharedPtr CapturePass::create(RenderContext* pRenderContext, const Dictionary& dict)
 {
-    SharedPtr pPass = SharedPtr(new CapturePass);
+    SharedPtr p = SharedPtr(new CapturePass);
 
-    if (dumpFormat == Falcor::Bitmap::FileFormat::PngFile)
-        fileEnding = ".png";
-    else if (dumpFormat == Falcor::Bitmap::FileFormat::JpegFile)
-        fileEnding = ".jpg";
-    else if (dumpFormat == Falcor::Bitmap::FileFormat::TgaFile)
-        fileEnding = ".tga";
-    else if (dumpFormat == Falcor::Bitmap::FileFormat::BmpFile)
-        fileEnding = ".bmp";
-    else if (dumpFormat == Falcor::Bitmap::FileFormat::PfmFile)
-        fileEnding = ".pfm";
-    else if (dumpFormat == Falcor::Bitmap::FileFormat::ExrFile)
-        fileEnding = ".exr";
+    for (const auto& [key, value] : dict)
+      if (key == "format")
+          p->setImageFormat(value);
 
-    return pPass;
+    return p;
+}
+
+void CapturePass::setImageFormat(Bitmap::FileFormat format)
+{
+    for (const auto& supported : ImageFormats)
+        if (supported.id == format) {
+            dumpFormat = supported;
+            return;
+        }
 }
 
 Dictionary CapturePass::getScriptingDictionary()
 {
-    return Dictionary();
+    Dictionary d;
+    d["format"] = dumpFormat.extension;
+    return d;
 }
 
-RenderPassReflection CapturePass::reflect(const CompileData& compileData)
+void CapturePass::setScene(RenderContext* context, const Scene::SharedPtr& scene)
+{
+    this->scene = scene;
+}
+
+RenderPassReflection CapturePass::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
-    addRenderPassInputs(reflector, kGBufferChannels);
+    reflector.addInputOutput("color1x1", "Full shading result").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
 
-    reflector.addInput("composite", "Final color result").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    /*addRenderPassInputs(reflector, GBufferChannels);
+
+    reflector.addInput("color1x1", "Full shading result").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    reflector.addInput("color2x2", "Half shading result").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    reflector.addInput("reprojected", "Previous reprojected shading result").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addInput("visibility", "Shadowing visibility buffer").flags(RenderPassReflection::Field::Flags::Optional);
     reflector.addInput("normals", "View-space normals").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
-    reflector.addInput("extraMat", "Roughness, opacity and visibility in dedicated texture").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
-    reflector.addInput("motion", "Motion vectors").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    reflector.addInput("extraMat", "Roughness, opacity and visibility in dedicated texture").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);*/
     return reflector;
 }
 
-void CapturePass::execute(RenderContext* pRenderContext, const RenderData& renderData)
+void CapturePass::execute(RenderContext* context, const RenderData& data)
 {
-  
+  if (capturing) {
+    if (viewpointMethod == ViewpointGeneration::FromGameplay) {
+      if (clock() > delay) {
+        dumpReproject(data);
+        dumpFrame(data);
+
+        delay = clock() + captureInterval * (0.9f + (float) (rand()) /( (float) (RAND_MAX/(0.2f))));
+      }
+    } else if (viewpointMethod == ViewpointGeneration::FromFile) {
+      bool waited = delay <= 0;
+      bool immediate = delay == framesWait;
+      bool isMain = (viewpoints.size() % 2) == 1;
+      bool done = viewpoints.size() == 0;
+
+      if (done) {
+          capturing = false;
+      } else if (waited) {
+        if (isMain) dumpFrame(data);
+        nextViewpoint();
+      } else {
+        if (isMain && immediate) dumpReproject(data);
+        delay--;
+      }
+    }
+  }
 }
 
-void CapturePass::loadViewPoints()
+void CapturePass::nextViewpoint()
 {
-    std::string filename;
-    FileDialogFilterVec filters = { {"cfg", "txt"} };
-    if (openFileDialog(filters, filename))
-    {
-        std::ifstream infile(filename, std::ios_base::in);
-        if (!infile.good())
-        {
-            logError("Failed to open file: " + filename, Logger::MsgBox::ContinueAbort);
-            return;
-        }
+  scene->getCamera()->updateFromAnimation(viewpoints.front());
+  delay = (float) framesWait;
+  viewpoints.pop();
+}
 
-        camMatrices = std::queue<glm::mat4x4>();
+void CapturePass::dumpReproject(const RenderData& data)
+{
+}
 
-        std::string line;
-        while (std::getline(infile, line))
-        {
-            std::stringstream ss(line);
-            glm::mat4x4 mats[2];
-            for (int l = 0; l < 2; l++) //actual view point, previous viewpoint
-            {
-                glm::mat4x4& mat = mats[l];
-                for (int i = 0; i < 4; i++)
-                {
-                    for (int j = 0; j < 4; j++)
-                    {
-                        ss >> mat[j][i];
-                    }
-                }
-                for (int j = 0; j < 4; j++)
-                {
-                    float v = mat[j][1];
-                    float w = mat[j][2];
-                    mat[j][2] = -v;
-                    mat[j][1] = w;
-                }
-                mat[2] = -mat[2]; // Apparently handedness mismatch with blender
-            }
-            camMatrices.push(mats[1]);
-            camMatrices.push(mats[0]);
-        }
-    }
+void CapturePass::dumpFrame(const RenderData& data)
+{
+  //data["color1x1"]->asTexture()->captureToFile(0,0, f"{dumpDir}/output_1x1.{dumpFormat.extension}", dumpFormat.id);
+  numDumped++;
 }
 
 void CapturePass::renderUI(Gui::Widgets& widget)
 {
-    // Capturing control
-    if (mpScene && mpScene->getCamera()->hasAnimation()) {
-        widget.dropdown("Viewpoint Generation", viewpointList, (uint32_t&)viewpointMethod);
-    }
+    if (scene)
+        widget.dropdown("Viewpoint Generation", ViewpointMethods, (uint32_t&)viewpointMethod);
 
     if (viewpointMethod == ViewpointGeneration::FromFile) {
         if (widget.button("Load Viewpoints"))
-          loadViewPoints();
+          loadViewpoints();
     } else {
         widget.var("Capture interval (ms)", captureInterval);
     }
 
-    widget.textbox("Directory for captured images", targetDir);
+    widget.textbox("Directory for captured images", dumpDir);
 
     if (!capturing && widget.button("Start capturing")) {
-        doingPrevious = true;
-        viewPointToCapture = 0;
         capturing = true;
     } else if (capturing && widget.button("Stop capturing")) {
         capturing = false;
+    }
+}
+
+void CapturePass::loadViewpoints()
+{
+    FileDialogFilterVec filters = { {"cfg", "txt"} };
+    std::string filename;
+
+    if (openFileDialog(filters, filename)) {
+        std::ifstream infile(filename, std::ios_base::in);
+        if (!infile.good()) {
+            logError("Failed to open file: " + filename, Logger::MsgBox::ContinueAbort);
+            return;
+        }
+
+        viewpoints = std::queue<glm::mat4x4>();
+        std::string line;
+
+        while (std::getline(infile, line)) {
+            std::stringstream ss(line);
+            glm::mat4x4 mats[2];
+
+            for (int l = 0; l < 2; l++) { //actual view point, previous viewpoint
+                glm::mat4x4& mat = mats[l];
+
+                for (int i = 0; i < 4; i++)
+                    for (int j = 0; j < 4; j++)
+                        ss >> mat[j][i];
+
+                for (int j = 0; j < 4; j++) {
+                    float v = mat[j][1];
+                    float w = mat[j][2];
+
+                    mat[j][2] = -v;
+                    mat[j][1] = w;
+                }
+
+                mat[2] = -mat[2]; // Apparently handedness mismatch with blender
+            }
+
+            viewpoints.push(mats[1]);
+            viewpoints.push(mats[0]);
+        }
     }
 }

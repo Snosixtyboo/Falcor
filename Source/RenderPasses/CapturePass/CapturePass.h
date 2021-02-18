@@ -7,87 +7,39 @@ using namespace Falcor;
 
 class CapturePass : public RenderPass
 {
-private:
-    enum class ViewpointGeneration { FromFile, FromScenePath};
-
-    std::string targetDir = ".";
-    size_t captureInterval = 1000;
-    size_t waitedFrames = 0;
-    size_t framesWait = 2;
-    Falcor::Bitmap::FileFormat dumpFormat = Falcor::Bitmap::FileFormat::PngFile;
-    ViewpointGeneration viewpointMethod = ViewpointGeneration::FromFile;
-
-    Gui::DropdownList viewpointList = {
-        {(uint32_t)ViewpointGeneration::FromFile, "Viewpoint file"},
-        {(uint32_t)ViewpointGeneration::FromScenePath, "Scene path"}
-    };
-
-    bool capturing = false;
-    bool doingPrevious = true;
-    int framesCaptured;
-    std::queue<glm::mat4x4> camMatrices;
-    uint32_t viewPointToCapture = 0;
-    size_t lastCaptureTime;
-    std::string fileEnding;
-
-    static const ChannelList kGBufferChannels;
-    int activeRateID = 0;
-    D3D12_SHADING_RATE activeRate = D3D12_SHADING_RATE_1X1;
-    ID3D12GraphicsCommandList5Ptr commandList5;
-
-    FullScreenPass::SharedPtr mpPass;
-    Fbo::SharedPtr mpFbo;
-    GraphicsVars::SharedPtr mpVars;
-    Scene::SharedPtr mpScene;
-    ParameterBlock::SharedPtr mpSceneBlock;
-    glm::mat4x4 prevVP;
-
-    int numLights;
-    ShaderVar lightsBufferVar;
-    Buffer::SharedPtr mpLightsBuffer;
-    LightProbe::SharedPtr lightProbe;
-
-    CapturePass();
-    void loadViewPoints();
-
 public:
+    struct ImageFormat { Bitmap::FileFormat id; std::string extension; };
+    enum class ViewpointGeneration { FromFile, FromGameplay };
     using SharedPtr = std::shared_ptr<CapturePass>;
-    static SharedPtr create(RenderContext* pRenderContext = nullptr, const Dictionary& dict = {});
 
-    virtual std::string getDesc() override { return "Writes gbuffer data at multiple shading resolutions to image files."; }
+    static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {});
+    virtual std::string getDesc() override { return "Dumps rendering data at multiple shading resolutions to image files."; }
     virtual Dictionary getScriptingDictionary() override;
-    virtual RenderPassReflection reflect(const CompileData& compileData) override;
-    virtual void compile(RenderContext* pContext, const CompileData& compileData) override {}
-    virtual void execute(RenderContext* pRenderContext, const RenderData& renderData) override;
+
+    virtual RenderPassReflection reflect(const CompileData& data) override;
+    virtual void compile(RenderContext* context, const CompileData& data) override {}
+    virtual void setScene(RenderContext* context, const Scene::SharedPtr& scene) override;
+    virtual void execute(RenderContext* context, const RenderData& data) override;
     virtual void renderUI(Gui::Widgets& widget) override;
-    virtual void setScene(RenderContext* pRenderContext, const Scene::SharedPtr& pScene) override;
-    virtual bool onMouseEvent(const MouseEvent& mouseEvent) override { return false; }
 
-    const D3D12_SHADING_RATE rates[7] = {
-                D3D12_SHADING_RATE_1X1,
-                D3D12_SHADING_RATE_1X2,
-                D3D12_SHADING_RATE_2X1,
-                D3D12_SHADING_RATE_2X2,
-                D3D12_SHADING_RATE_2X4,
-                D3D12_SHADING_RATE_4X2,
-                D3D12_SHADING_RATE_4X4 };
+    Bitmap::FileFormat getImageFormat() {return dumpFormat.id;}
+    void setImageFormat(Bitmap::FileFormat format);
 
-    virtual bool onKeyEvent(const KeyboardEvent& keyEvent) override
-    {
-        if (keyEvent.type == KeyboardEvent::Type::KeyReleased)
-        {
-            if (keyEvent.key == KeyboardEvent::Key::R)
-            {
-                activeRateID = (activeRateID + 1) % 7;
-                activeRate = rates[activeRateID];
-                return true;
-            }
-            if (keyEvent.key == KeyboardEvent::Key::C)
-            {
-                capturing = !capturing;
-                return true;
-            }
-        }
-        return false;
-    }
+private:
+    std::string dumpDir = ".";
+    ImageFormat dumpFormat = { Bitmap::FileFormat::PfmFile, "pfm" };
+    ViewpointGeneration viewpointMethod = ViewpointGeneration::FromFile;
+    size_t captureInterval = 1000;
+    size_t framesWait = 2;
+
+    Scene::SharedPtr scene;
+    std::queue<glm::mat4x4> viewpoints;
+    bool capturing = false;
+    int numDumped = 0;
+    float delay = 0;
+
+    void loadViewpoints();
+    void nextViewpoint();
+    void dumpReproject(const RenderData& data);
+    void dumpFrame(const RenderData& data);
 };
