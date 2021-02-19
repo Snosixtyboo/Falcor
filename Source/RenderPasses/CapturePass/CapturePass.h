@@ -28,7 +28,7 @@ public:
 private:
     std::string dumpDir = ".";
     ImageFormat dumpFormat = { Bitmap::FileFormat::PfmFile, "pfm" };
-    ViewpointGeneration viewpointMethod = ViewpointGeneration::FromFile;
+    ViewpointGeneration viewpointMethod = ViewpointGeneration::FromGameplay;
     size_t captureInterval = 1000;
     size_t framesWait = 2;
 
@@ -42,4 +42,5 @@ private:
     void nextViewpoint();
     void dumpReproject(const RenderData& data);
     void dumpFrame(const RenderData& data);
+    std::filesystem::path dumpPath();
 };

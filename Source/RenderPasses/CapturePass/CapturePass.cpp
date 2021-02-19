@@ -15,9 +15,15 @@ const CapturePass::ImageFormat ImageFormats[] = {
 
 const ChannelList GBufferChannels =
 {
-    { "diffuse", "gDiffuseOpacity",        "Diffuse color",    true /* optional */, ResourceFormat::RGBA32Float },
-    { "specular",      "gSpecRough",       "Specular color",   true /* optional */, ResourceFormat::RGBA32Float },
-    { "emissive",       "gEmissive",       "Emissive color",   true /* optional */, ResourceFormat::RGBA32Float },
+    { "color1x1",     "",    "Full shading result"                                                           },
+    { "color2x2",     "",    "Half shading result"                                                           },
+    { "diffuse",      "",    "Diffuse color"                                                                 },
+    { "specular",     "",    "Specular color"                                                                },
+    { "emissive",     "",    "Emissive color"                                                                },
+    { "reproject",    "",    "Previous frame reprojected shading result"                                     },
+    { "visibility",   "",    "Shadowing visibility buffer"                                                   },
+    { "normals",      "",    "View-space normals",                           true, ResourceFormat::RGBA8Unorm},
+    { "extras",       "",    "Roughness, opacity and visibility"                                             },
 };
 
 // Don't remove this. it's required for hot-reload to function properly
@@ -66,16 +72,9 @@ void CapturePass::setScene(RenderContext* context, const Scene::SharedPtr& scene
 RenderPassReflection CapturePass::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
-    reflector.addInputOutput("color1x1", "Full shading result").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    for (const auto& channel : GBufferChannels)
+        reflector.addInputOutput(channel.name, channel.desc).format(channel.format).texture2D(0,0,1).flags(RenderPassReflection::Field::Flags::Optional);
 
-    /*addRenderPassInputs(reflector, GBufferChannels);
-
-    reflector.addInput("color1x1", "Full shading result").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
-    reflector.addInput("color2x2", "Half shading result").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
-    reflector.addInput("reprojected", "Previous reprojected shading result").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
-    reflector.addInput("visibility", "Shadowing visibility buffer").flags(RenderPassReflection::Field::Flags::Optional);
-    reflector.addInput("normals", "View-space normals").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
-    reflector.addInput("extraMat", "Roughness, opacity and visibility in dedicated texture").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);*/
     return reflector;
 }
 
@@ -84,8 +83,15 @@ void CapturePass::execute(RenderContext* context, const RenderData& data)
   if (capturing) {
     if (viewpointMethod == ViewpointGeneration::FromGameplay) {
       if (clock() > delay) {
+        gpFramework->getGlobalClock().pause();
+        gpFramework->pauseRenderer(true);
+
+
         dumpReproject(data);
         dumpFrame(data);
+
+        gpFramework->pauseRenderer(false);
+        gpFramework->getGlobalClock().play();
 
         delay = clock() + captureInterval * (0.9f + (float) (rand()) /( (float) (RAND_MAX/(0.2f))));
       }
@@ -117,12 +123,26 @@ void CapturePass::nextViewpoint()
 
 void CapturePass::dumpReproject(const RenderData& data)
 {
+  auto path = dumpPath();
+
+  std::filesystem::create_directory(path);
+  data["reproject"]->asTexture()->captureToFile(0,0, (path / ("reproject_1x1." + dumpFormat.extension)).string(), dumpFormat.id);
 }
 
 void CapturePass::dumpFrame(const RenderData& data)
 {
-  //data["color1x1"]->asTexture()->captureToFile(0,0, f"{dumpDir}/output_1x1.{dumpFormat.extension}", dumpFormat.id);
+  auto path = dumpPath();
+
+  data["color1x1"]->asTexture()->captureToFile(0,0, (path / ("output_1x1." + dumpFormat.extension)).string(), dumpFormat.id);
+  data["color2x2"]->asTexture()->captureToFile(0,0, (path / ("output_2x2." + dumpFormat.extension)).string(), dumpFormat.id);
   numDumped++;
+}
+
+std::filesystem::path CapturePass::dumpPath()
+{
+  std::stringstream subdir;
+  subdir << std::setw(4) << std::setfill('0') << numDumped;
+  return (std::filesystem::path) dumpDir / subdir.str();
 }
 
 void CapturePass::renderUI(Gui::Widgets& widget)

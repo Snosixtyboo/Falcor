@@ -28,14 +28,14 @@ RenderPassReflection Reproject::reflect(const CompileData& compileData)
     RenderPassReflection reflector;
     reflector.addInput("input", "Texture to be reprojected with 1 frame delay.").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addInput("motion", "Screen-space motion between current and previous frame.").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
-    reflector.addOutput("reproject", "Reprojected delayed input.").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    reflector.addOutput("output", "Reprojected delayed input.").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     reflector.addOutput("previous", "Previous frame storage.").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
     return reflector;
 }
 
 void Reproject::execute(RenderContext* context, const RenderData& data)
 {
-  framebuffers->attachColorTarget(data["reproject"]->asTexture(), 0);
+  framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
   reprojectPass["input2D"] = data["previous"]->asTexture();
   reprojectPass["motion2D"] = data["motion"]->asTexture();
   reprojectPass->execute(context, framebuffers);

@@ -91,6 +91,8 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('DeferredMultires.motionOut', 'Reproject.motion')
     g.addEdge('FXAA1x1.dst', 'Reproject.input')
 
+    g.addEdge('Reproject.output', 'Capture.reproject')
+    g.addEdge('FXAA2x2.dst', 'Capture.color2x2')
     g.addEdge('FXAA1x1.dst', 'Capture.color1x1')
     g.markOutput('Capture.color1x1')
     return g
