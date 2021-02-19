@@ -9,21 +9,24 @@ const Gui::DropdownList ViewpointMethods = {
 };
 
 const CapturePass::ImageFormat ImageFormats[] = {
+    {Bitmap::FileFormat::BmpFile, "bmp"},
+    {Bitmap::FileFormat::ExrFile, "exr"},
     {Bitmap::FileFormat::JpegFile, "jpg"},
-    {Bitmap::FileFormat::PfmFile, "pfm"}
+    {Bitmap::FileFormat::PfmFile, "pfm"},
+    {Bitmap::FileFormat::PngFile, "png"},
+    {Bitmap::FileFormat::TgaFile, "tga"},
 };
 
-const ChannelList GBufferChannels =
+const ChannelList Channels =
 {
-    { "color1x1",     "",    "Full shading result"                                                           },
-    { "color2x2",     "",    "Half shading result"                                                           },
-    { "diffuse",      "",    "Diffuse color"                                                                 },
-    { "specular",     "",    "Specular color"                                                                },
-    { "emissive",     "",    "Emissive color"                                                                },
-    { "reproject",    "",    "Previous frame reprojected shading result"                                     },
-    { "visibility",   "",    "Shadowing visibility buffer"                                                   },
-    { "normals",      "",    "View-space normals",                           true, ResourceFormat::RGBA8Unorm},
-    { "extras",       "",    "Roughness, opacity and visibility"                                             },
+    { "color1x1",     "output_1x1",      "Full shading result"                                   },
+    { "color2x2",     "output_2x2",      "Half shading result"                                   },
+    { "reproject",    "reproject_1x1",   "Previous frame reprojected shading result"             },
+    { "diffuse",      "diffuse_1x1",     "Diffuse color"                                         },
+    { "specular",     "specular_1x1",    "Specular color"                                        },
+    //{ "emissive",     "emissive_1x1",    "Emissive color"                                        },
+    { "normals",      "normals_1x1",      "View-space normals",                                  },
+    { "extras",       "extra_1x1",       "Roughness, opacity and visibility"                     },
 };
 
 // Don't remove this. it's required for hot-reload to function properly
@@ -72,7 +75,7 @@ void CapturePass::setScene(RenderContext* context, const Scene::SharedPtr& scene
 RenderPassReflection CapturePass::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
-    for (const auto& channel : GBufferChannels)
+    for (const auto& channel : Channels)
         reflector.addInputOutput(channel.name, channel.desc).format(channel.format).texture2D(0,0,1).flags(RenderPassReflection::Field::Flags::Optional);
 
     return reflector;
@@ -83,15 +86,8 @@ void CapturePass::execute(RenderContext* context, const RenderData& data)
   if (capturing) {
     if (viewpointMethod == ViewpointGeneration::FromGameplay) {
       if (clock() > delay) {
-        gpFramework->getGlobalClock().pause();
-        gpFramework->pauseRenderer(true);
-
-
         dumpReproject(data);
         dumpFrame(data);
-
-        gpFramework->pauseRenderer(false);
-        gpFramework->getGlobalClock().play();
 
         delay = clock() + captureInterval * (0.9f + (float) (rand()) /( (float) (RAND_MAX/(0.2f))));
       }
@@ -124,7 +120,6 @@ void CapturePass::nextViewpoint()
 void CapturePass::dumpReproject(const RenderData& data)
 {
   auto path = dumpPath();
-
   std::filesystem::create_directory(path);
   data["reproject"]->asTexture()->captureToFile(0,0, (path / ("reproject_1x1." + dumpFormat.extension)).string(), dumpFormat.id);
 }
@@ -132,9 +127,10 @@ void CapturePass::dumpReproject(const RenderData& data)
 void CapturePass::dumpFrame(const RenderData& data)
 {
   auto path = dumpPath();
+  for (const auto& channel : Channels)
+    if (channel.name.compare("reproject") != 0)
+      data[channel.name]->asTexture()->captureToFile(0,0, (path / (channel.texname + "." + dumpFormat.extension)).string(), dumpFormat.id);
 
-  data["color1x1"]->asTexture()->captureToFile(0,0, (path / ("output_1x1." + dumpFormat.extension)).string(), dumpFormat.id);
-  data["color2x2"]->asTexture()->captureToFile(0,0, (path / ("output_2x2." + dumpFormat.extension)).string(), dumpFormat.id);
   numDumped++;
 }
 

@@ -3,8 +3,8 @@ from falcor import *
 import os
 
 # Scene
-#m.loadScene(os.getenv('FALCOR_DATA').strip('/') + '/SunTemple_v3/SunTemple/SunTemple2.fscene')
-m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/SunTemple/SunTemple.fscene')
+m.loadScene(os.getenv('FALCOR_DATA').strip('/') + '/SunTemple_v3/SunTemple/SunTemple2.fscene')
+#m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/SunTemple/SunTemple.fscene')
 m.scene.renderSettings = SceneRenderSettings(useEnvLight=True, useAnalyticLights=True, useEmissiveLights=True)
 m.scene.camera.position = float3(0.017157,3.184416,71.125000)
 m.scene.camera.target = float3(-0.021863,3.224318,70.126556)
@@ -91,10 +91,23 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('DeferredMultires.motionOut', 'Reproject.motion')
     g.addEdge('FXAA1x1.dst', 'Reproject.input')
 
-    g.addEdge('Reproject.output', 'Capture.reproject')
-    g.addEdge('FXAA2x2.dst', 'Capture.color2x2')
     g.addEdge('FXAA1x1.dst', 'Capture.color1x1')
+    g.addEdge('FXAA2x2.dst', 'Capture.color2x2')
+    g.addEdge('Reproject.output', 'Capture.reproject')
+    g.addEdge('GBufferRaster.diffuseOpacity', 'Capture.diffuse')
+    g.addEdge('GBufferRaster.specRough', 'Capture.specular')
+    #g.addEdge('GBufferRaster.emissive', 'Capture.emissive')
+    g.addEdge('DeferredMultires.viewNormalsOut', 'Capture.normals')
+    g.addEdge('DeferredMultires.extraOut', 'Capture.extras')
+
     g.markOutput('Capture.color1x1')
+    g.markOutput('Capture.color2x2')
+    g.markOutput('Capture.reproject')
+    g.markOutput('Capture.diffuse')
+    g.markOutput('Capture.specular')
+    #g.markOutput('Capture.emissive')
+    g.markOutput('Capture.normals')
+    g.markOutput('Capture.extras')
     return g
 
 m.addGraph(render_graph_DefaultRenderGraph())
