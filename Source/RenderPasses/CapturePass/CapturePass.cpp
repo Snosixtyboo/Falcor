@@ -4,17 +4,17 @@
 #include <cstdlib>
 
 const Gui::DropdownList ViewpointMethods = {
-    {(uint32_t)CapturePass::ViewpointGeneration::FromFile, "Viewpoint file"},
-    {(uint32_t)CapturePass::ViewpointGeneration::FromGameplay, "Gameplay"}
+    {(uint32_t) CapturePass::ViewpointGeneration::FromFile, "Viewpoint file"},
+    {(uint32_t) CapturePass::ViewpointGeneration::FromGameplay, "Gameplay intervals"}
 };
 
-const CapturePass::ImageFormat ImageFormats[] = {
-    {Bitmap::FileFormat::BmpFile, "bmp"},
-    {Bitmap::FileFormat::ExrFile, "exr"},
-    {Bitmap::FileFormat::JpegFile, "jpg"},
-    {Bitmap::FileFormat::PfmFile, "pfm"},
-    {Bitmap::FileFormat::PngFile, "png"},
-    {Bitmap::FileFormat::TgaFile, "tga"},
+const Gui::DropdownList ImageFormats = {
+    {(uint32_t) Bitmap::FileFormat::BmpFile, "bmp"},
+    {(uint32_t) Bitmap::FileFormat::ExrFile, "exr"},
+    {(uint32_t) Bitmap::FileFormat::JpegFile, "jpg"},
+    {(uint32_t) Bitmap::FileFormat::PfmFile, "pfm"},
+    {(uint32_t) Bitmap::FileFormat::PngFile, "png"},
+    {(uint32_t) Bitmap::FileFormat::TgaFile, "tga"},
 };
 
 const ChannelList Channels =
@@ -42,29 +42,7 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 
 CapturePass::SharedPtr CapturePass::create(RenderContext* pRenderContext, const Dictionary& dict)
 {
-    SharedPtr p = SharedPtr(new CapturePass);
-
-    for (const auto& [key, value] : dict)
-      if (key == "format")
-          p->setImageFormat(value);
-
-    return p;
-}
-
-void CapturePass::setImageFormat(Bitmap::FileFormat format)
-{
-    for (const auto& supported : ImageFormats)
-        if (supported.id == format) {
-            dumpFormat = supported;
-            return;
-        }
-}
-
-Dictionary CapturePass::getScriptingDictionary()
-{
-    Dictionary d;
-    d["format"] = dumpFormat.extension;
-    return d;
+    return SharedPtr(new CapturePass);
 }
 
 void CapturePass::setScene(RenderContext* context, const Scene::SharedPtr& scene)
@@ -121,7 +99,7 @@ void CapturePass::dumpReproject(const RenderData& data)
 {
   auto path = dumpPath();
   std::filesystem::create_directory(path);
-  data["reproject"]->asTexture()->captureToFile(0,0, (path / ("reproject_1x1." + dumpFormat.extension)).string(), dumpFormat.id);
+  data["reproject"]->asTexture()->captureToFile(0,0, (path / ("reproject_1x1." + dumpFormat.label)).string(), (Bitmap::FileFormat)dumpFormat.value);
 }
 
 void CapturePass::dumpFrame(const RenderData& data)
@@ -129,7 +107,7 @@ void CapturePass::dumpFrame(const RenderData& data)
   auto path = dumpPath();
   for (const auto& channel : Channels)
     if (channel.name.compare("reproject") != 0)
-      data[channel.name]->asTexture()->captureToFile(0,0, (path / (channel.texname + "." + dumpFormat.extension)).string(), dumpFormat.id);
+      data[channel.name]->asTexture()->captureToFile(0,0, (path / (channel.texname + "." + dumpFormat.label)).string(), (Bitmap::FileFormat)dumpFormat.value);
 
   numDumped++;
 }
@@ -153,7 +131,13 @@ void CapturePass::renderUI(Gui::Widgets& widget)
         widget.var("Capture interval (ms)", captureInterval);
     }
 
-    widget.textbox("Directory for captured images", dumpDir);
+    widget.textbox("Destination Directory", dumpDir);
+
+    uint32_t format = dumpFormat.value;
+    if (widget.dropdown("File Format", ImageFormats, format))
+        for (auto& line : ImageFormats)
+            if (line.value == format)
+                dumpFormat = line;
 
     if (!capturing && widget.button("Start capturing")) {
         capturing = true;

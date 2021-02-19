@@ -8,13 +8,12 @@ using namespace Falcor;
 class CapturePass : public RenderPass
 {
 public:
-    struct ImageFormat { Bitmap::FileFormat id; std::string extension; };
     enum class ViewpointGeneration { FromFile, FromGameplay };
     using SharedPtr = std::shared_ptr<CapturePass>;
 
     static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {});
     virtual std::string getDesc() override { return "Dumps rendering data at multiple shading resolutions to image files."; }
-    virtual Dictionary getScriptingDictionary() override;
+    virtual Dictionary getScriptingDictionary() { return Dictionary(); }
 
     virtual RenderPassReflection reflect(const CompileData& data) override;
     virtual void compile(RenderContext* context, const CompileData& data) override {}
@@ -22,12 +21,9 @@ public:
     virtual void execute(RenderContext* context, const RenderData& data) override;
     virtual void renderUI(Gui::Widgets& widget) override;
 
-    Bitmap::FileFormat getImageFormat() {return dumpFormat.id;}
-    void setImageFormat(Bitmap::FileFormat format);
-
 private:
     std::string dumpDir = ".";
-    ImageFormat dumpFormat = { Bitmap::FileFormat::PfmFile, "pfm" };
+    Gui::DropdownValue dumpFormat = {(uint32_t)Bitmap::FileFormat::PfmFile, "pfm"};
     ViewpointGeneration viewpointMethod = ViewpointGeneration::FromGameplay;
     size_t captureInterval = 1000;
     size_t framesWait = 2;
