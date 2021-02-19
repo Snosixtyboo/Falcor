@@ -25,7 +25,7 @@ private:
     Gui::DropdownValue dumpFormat = {(uint32_t)Bitmap::FileFormat::PfmFile, "pfm"};
     ViewpointGeneration viewpointMethod = ViewpointGeneration::FromFile;
     size_t captureInterval = 1000;
-    size_t framesWait = 3;
+    size_t framesWait = 4;
 
     Scene::SharedPtr scene;
     std::queue<glm::mat4x4> viewpoints;

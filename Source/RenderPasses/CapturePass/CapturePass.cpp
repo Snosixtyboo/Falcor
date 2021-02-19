@@ -97,9 +97,7 @@ void CapturePass::nextViewpoint()
 
 void CapturePass::dumpReproject(const RenderData& data)
 {
-  auto path = dumpPath();
-  std::filesystem::create_directory(path);
-  data["reproject"]->asTexture()->captureToFile(0,0, (path / ("reproject_1x1." + dumpFormat.label)).string(), (Bitmap::FileFormat)dumpFormat.value);
+  data["reproject"]->asTexture()->captureToFile(0,0, (dumpPath() / ("reproject_1x1." + dumpFormat.label)).string(), (Bitmap::FileFormat)dumpFormat.value);
 }
 
 void CapturePass::dumpFrame(const RenderData& data)
@@ -114,9 +112,10 @@ void CapturePass::dumpFrame(const RenderData& data)
 
 std::filesystem::path CapturePass::dumpPath()
 {
-  std::stringstream subdir;
-  subdir << std::setw(4) << std::setfill('0') << numDumped;
-  return (std::filesystem::path) dumpDir / subdir.str();
+  auto subdir = std::stringstream() << std::setw(4) << std::setfill('0') << numDumped;
+  auto path = (std::filesystem::path) dumpDir / subdir.str();
+  std::filesystem::create_directory(path);
+  return path;
 }
 
 void CapturePass::renderUI(Gui::Widgets& widget)
