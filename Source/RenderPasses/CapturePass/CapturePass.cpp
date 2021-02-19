@@ -72,7 +72,7 @@ void CapturePass::execute(RenderContext* context, const RenderData& data)
     } else if (viewpointMethod == ViewpointGeneration::FromFile) {
       bool waited = delay <= 0;
       bool immediate = delay == framesWait;
-      bool isMain = (viewpoints.size() % 2) == 1;
+      bool isMain = (viewpoints.size() % 2) == 0;
       bool done = viewpoints.size() == 0;
 
       if (done) {
@@ -148,10 +148,9 @@ void CapturePass::renderUI(Gui::Widgets& widget)
 
 void CapturePass::loadViewpoints()
 {
-    FileDialogFilterVec filters = { {"cfg", "txt"} };
     std::string filename;
 
-    if (openFileDialog(filters, filename)) {
+    if (openFileDialog({{"cfg", "txt"}}, filename)) {
         std::ifstream infile(filename, std::ios_base::in);
         if (!infile.good()) {
             logError("Failed to open file: " + filename, Logger::MsgBox::ContinueAbort);
@@ -165,7 +164,7 @@ void CapturePass::loadViewpoints()
             std::stringstream ss(line);
             glm::mat4x4 mats[2];
 
-            for (int l = 0; l < 2; l++) { //actual view point, previous viewpoint
+            for (int l = 0; l < 2; l++) { // actual view point, previous viewpoint
                 glm::mat4x4& mat = mats[l];
 
                 for (int i = 0; i < 4; i++)
@@ -180,11 +179,13 @@ void CapturePass::loadViewpoints()
                     mat[j][1] = w;
                 }
 
-                mat[2] = -mat[2]; // Apparently handedness mismatch with blender
+                mat[2] = -mat[2]; // apparently handedness mismatch with blender
             }
 
             viewpoints.push(mats[1]);
             viewpoints.push(mats[0]);
         }
+
+        nextViewpoint();
     }
 }

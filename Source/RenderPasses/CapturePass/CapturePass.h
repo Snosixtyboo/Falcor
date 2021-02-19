@@ -13,7 +13,6 @@ public:
 
     static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {});
     virtual std::string getDesc() override { return "Dumps rendering data at multiple shading resolutions to image files."; }
-    virtual Dictionary getScriptingDictionary() { return Dictionary(); }
 
     virtual RenderPassReflection reflect(const CompileData& data) override;
     virtual void compile(RenderContext* context, const CompileData& data) override {}
@@ -24,9 +23,9 @@ public:
 private:
     std::string dumpDir = ".";
     Gui::DropdownValue dumpFormat = {(uint32_t)Bitmap::FileFormat::PfmFile, "pfm"};
-    ViewpointGeneration viewpointMethod = ViewpointGeneration::FromGameplay;
+    ViewpointGeneration viewpointMethod = ViewpointGeneration::FromFile;
     size_t captureInterval = 1000;
-    size_t framesWait = 2;
+    size_t framesWait = 3;
 
     Scene::SharedPtr scene;
     std::queue<glm::mat4x4> viewpoints;

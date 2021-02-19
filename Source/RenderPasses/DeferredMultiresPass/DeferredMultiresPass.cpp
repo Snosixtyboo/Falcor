@@ -76,11 +76,6 @@ DeferredMultiresPass::SharedPtr DeferredMultiresPass::create(RenderContext* cont
     return SharedPtr(new DeferredMultiresPass);
 }
 
-Dictionary DeferredMultiresPass::getScriptingDictionary()
-{
-    return Dictionary();
-}
-
 RenderPassReflection DeferredMultiresPass::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;

@@ -13,7 +13,6 @@ public:
 
     static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {});
     virtual std::string getDesc() override { return "Deferred rasterization at multiple shading rates."; }
-    virtual Dictionary getScriptingDictionary() override;
 
     virtual RenderPassReflection reflect(const CompileData& data) override;
     virtual void compile(RenderContext* context, const CompileData& data) override {}
