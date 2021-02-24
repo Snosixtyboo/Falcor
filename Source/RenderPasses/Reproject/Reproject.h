@@ -8,7 +8,7 @@ using namespace Falcor;
 class Reproject : public RenderPass
 {
 private:
-    FullScreenPass::SharedPtr copyPass, reprojectPass;
+    FullScreenPass::SharedPtr shader;
     Fbo::SharedPtr framebuffers;
     Reproject();
 

@@ -43,7 +43,6 @@
     <ClCompile Include="Reproject.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ShaderSource Include="Copy.slang" />
     <ShaderSource Include="Reproject.slang" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">

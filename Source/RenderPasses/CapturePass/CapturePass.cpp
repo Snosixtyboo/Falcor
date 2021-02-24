@@ -54,7 +54,7 @@ RenderPassReflection CapturePass::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
     for (const auto& channel : Channels)
-        reflector.addInputOutput(channel.name, channel.desc).format(channel.format).texture2D(0,0,1).flags(RenderPassReflection::Field::Flags::Optional);
+        reflector.addInputOutput(channel.name, channel.desc).format(channel.format).flags(RenderPassReflection::Field::Flags::Optional);
 
     return reflector;
 }

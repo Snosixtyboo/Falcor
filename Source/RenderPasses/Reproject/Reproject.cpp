@@ -17,10 +17,8 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 Reproject::Reproject()
 {
     framebuffers = Fbo::create();
-    reprojectPass = FullScreenPass::create("RenderPasses/Reproject/Reproject.slang");
-    reprojectPass["sampler"] = Sampler::create(Sampler::Desc().setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border));
-    copyPass = FullScreenPass::create("RenderPasses/Reproject/Copy.slang"); // shitty way to save previous frame
-    copyPass["sampler"] = Sampler::create(Sampler::Desc().setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point));
+    shader = FullScreenPass::create("RenderPasses/Reproject/Reproject.slang");
+    shader["sampler"] = Sampler::create(Sampler::Desc().setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border));
 }
 
 RenderPassReflection Reproject::reflect(const CompileData& compileData)
@@ -36,11 +34,9 @@ RenderPassReflection Reproject::reflect(const CompileData& compileData)
 void Reproject::execute(RenderContext* context, const RenderData& data)
 {
   framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
-  reprojectPass["input2D"] = data["previous"]->asTexture();
-  reprojectPass["motion2D"] = data["motion"]->asTexture();
-  reprojectPass->execute(context, framebuffers);
+  shader["input2D"] = data["previous"]->asTexture();
+  shader["motion2D"] = data["motion"]->asTexture();
+  shader->execute(context, framebuffers);
 
-  framebuffers->attachColorTarget(data["previous"]->asTexture(), 0);
-  copyPass["input2D"] = data["input"]->asTexture();
-  copyPass->execute(context, framebuffers);
+  context->blit(data["input"]->asTexture()->getSRV(), data["previous"]->asTexture()->getRTV(), uint4(-1), uint4(-1), Sampler::Filter::Point); // save frame for next render
 }
