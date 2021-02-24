@@ -8,6 +8,7 @@ using namespace Falcor;
 class CapturePass : public RenderPass
 {
 public:
+    struct ImageFormat { Bitmap::FileFormat id; std::string extension;  bool hdr = false; };
     enum class ViewpointGeneration { FromFile, FromGameplay };
     using SharedPtr = std::shared_ptr<CapturePass>;
 
@@ -22,7 +23,7 @@ public:
 
 private:
     std::string dumpDir = ".";
-    Gui::DropdownValue dumpFormat = {(uint32_t)Bitmap::FileFormat::PfmFile, "pfm"};
+    ImageFormat dumpFormat = { Bitmap::FileFormat::PfmFile, "pfm", true };
     ViewpointGeneration viewpointMethod = ViewpointGeneration::FromFile;
     size_t captureInterval = 1000;
     size_t framesWait = 4;
@@ -35,7 +36,7 @@ private:
 
     void loadViewpoints();
     void nextViewpoint();
-    void dumpReproject(const RenderData& data);
-    void dumpFrame(const RenderData& data);
-    std::filesystem::path dumpPath();
+    void dumpReproject(RenderContext* context, const RenderData& data);
+    void dumpFrame(RenderContext* context, const RenderData& data);
+    void dumpFile(RenderContext* context, const RenderData& data, ChannelDesc channel);
 };

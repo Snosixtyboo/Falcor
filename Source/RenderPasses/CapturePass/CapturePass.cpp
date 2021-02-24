@@ -3,21 +3,7 @@
 #include <string>
 #include <cstdlib>
 
-const Gui::DropdownList ViewpointMethods = {
-    {(uint32_t) CapturePass::ViewpointGeneration::FromFile, "Viewpoint file"},
-    {(uint32_t) CapturePass::ViewpointGeneration::FromGameplay, "Gameplay intervals"}
-};
-
-const Gui::DropdownList ImageFormats = {
-    {(uint32_t) Bitmap::FileFormat::BmpFile, "bmp"},
-    {(uint32_t) Bitmap::FileFormat::ExrFile, "exr"},
-    {(uint32_t) Bitmap::FileFormat::JpegFile, "jpg"},
-    {(uint32_t) Bitmap::FileFormat::PfmFile, "pfm"},
-    {(uint32_t) Bitmap::FileFormat::PngFile, "png"},
-    {(uint32_t) Bitmap::FileFormat::TgaFile, "tga"},
-};
-
-const ChannelList Channels =
+const ChannelList DumpChannels =
 {
     { "color1x1",     "output_1x1",      "Full shading result"                                   },
     { "color2x2",     "output_2x2",      "Half shading result"                                   },
@@ -27,6 +13,21 @@ const ChannelList Channels =
     //{ "emissive",     "emissive_1x1",    "Emissive color"                                        },
     { "normals",      "normals_1x1",      "View-space normals",                                  },
     { "extras",       "extra_1x1",       "Roughness, opacity and visibility"                     },
+};
+
+const auto ReprojectChannel = DumpChannels[2];
+const Gui::DropdownList ViewpointMethods = {
+    {(uint32_t) CapturePass::ViewpointGeneration::FromFile, "Viewpoint file"},
+    {(uint32_t) CapturePass::ViewpointGeneration::FromGameplay, "Gameplay intervals"}
+};
+
+const CapturePass::ImageFormat DumpFormats[] = {
+    { Bitmap::FileFormat::BmpFile, "bmp" },
+    { Bitmap::FileFormat::ExrFile, "exr", true },
+    { Bitmap::FileFormat::JpegFile, "jpg" },
+    { Bitmap::FileFormat::PfmFile, "pfm", true },
+    { Bitmap::FileFormat::PngFile, "png" },
+    { Bitmap::FileFormat::TgaFile, "tga" },
 };
 
 // Don't remove this. it's required for hot-reload to function properly
@@ -53,69 +54,74 @@ void CapturePass::setScene(RenderContext* context, const Scene::SharedPtr& scene
 RenderPassReflection CapturePass::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
-    for (const auto& channel : Channels)
+    for (const auto& channel : DumpChannels)
         reflector.addInputOutput(channel.name, channel.desc).format(channel.format).flags(RenderPassReflection::Field::Flags::Optional);
 
+    reflector.addInternal("srgb", "Buffer for 8-bit image export.").format(ResourceFormat::RGBA8UnormSrgb);
     return reflector;
 }
 
 void CapturePass::execute(RenderContext* context, const RenderData& data)
 {
-  if (capturing) {
-    if (viewpointMethod == ViewpointGeneration::FromGameplay) {
-      if (clock() > delay) {
-        dumpReproject(data);
-        dumpFrame(data);
+    if (capturing) {
+        if (viewpointMethod == ViewpointGeneration::FromGameplay) {
+            if (clock() > delay) {
+                dumpReproject(context, data);
+                dumpFrame(context, data);
 
-        delay = clock() + captureInterval * (0.9f + (float) (rand()) /( (float) (RAND_MAX/(0.2f))));
-      }
-    } else if (viewpointMethod == ViewpointGeneration::FromFile) {
-      bool waited = delay <= 0;
-      bool immediate = delay == framesWait;
-      bool isMain = (viewpoints.size() % 2) == 0;
-      bool done = viewpoints.size() == 0;
+                delay = clock() + captureInterval * (0.9f + (float) (rand()) /( (float) (RAND_MAX/(0.2f))));
+            }
+        } else if (viewpointMethod == ViewpointGeneration::FromFile) {
+            bool waited = delay <= 0;
+            bool immediate = delay == framesWait;
+            bool isMain = (viewpoints.size() % 2) == 0;
+            bool done = viewpoints.size() == 0;
 
-      if (done) {
-          capturing = false;
-      } else if (waited) {
-        if (isMain) dumpFrame(data);
-        nextViewpoint();
-      } else {
-        if (isMain && immediate) dumpReproject(data);
-        delay--;
-      }
+            if (done) {
+                capturing = false;
+            } else if (waited) {
+                if (isMain) dumpFrame(context, data);
+                nextViewpoint();
+            } else {
+                if (isMain && immediate) dumpReproject(context, data);
+                delay--;
+            }
+        }
     }
-  }
 }
 
 void CapturePass::nextViewpoint()
 {
-  scene->getCamera()->updateFromAnimation(viewpoints.front());
-  delay = (float) framesWait;
-  viewpoints.pop();
+    scene->getCamera()->updateFromAnimation(viewpoints.front());
+    delay = (float) framesWait;
+    viewpoints.pop();
 }
 
-void CapturePass::dumpReproject(const RenderData& data)
+void CapturePass::dumpReproject(RenderContext* context, const RenderData& data)
 {
-  data["reproject"]->asTexture()->captureToFile(0,0, (dumpPath() / ("reproject_1x1." + dumpFormat.label)).string(), (Bitmap::FileFormat)dumpFormat.value);
+    dumpFile(context, data, ReprojectChannel);
 }
 
-void CapturePass::dumpFrame(const RenderData& data)
+void CapturePass::dumpFrame(RenderContext* context, const RenderData& data)
 {
-  auto path = dumpPath();
-  for (const auto& channel : Channels)
-    if (channel.name.compare("reproject") != 0)
-      data[channel.name]->asTexture()->captureToFile(0,0, (path / (channel.texname + "." + dumpFormat.label)).string(), (Bitmap::FileFormat)dumpFormat.value);
+    for (const auto& channel : DumpChannels)
+        if (channel.name.compare(ReprojectChannel.name) != 0)
+            dumpFile(context, data, channel);
 
-  numDumped++;
+    numDumped++;
 }
 
-std::filesystem::path CapturePass::dumpPath()
+void CapturePass::dumpFile(RenderContext* context, const RenderData& data, ChannelDesc channel)
 {
-  auto subdir = std::stringstream() << std::setw(4) << std::setfill('0') << numDumped;
-  auto path = (std::filesystem::path) dumpDir / subdir.str();
-  std::filesystem::create_directory(path);
-  return path;
+    auto out = (dumpFormat.hdr ? data[channel.name] : data["srgb"])->asTexture();
+    auto subdir = std::stringstream() << std::setw(4) << std::setfill('0') << numDumped;
+    auto path = (std::filesystem::path)dumpDir / subdir.str();
+
+    if (!dumpFormat.hdr)
+        context->blit(data[channel.name]->asTexture()->getSRV(), out->getRTV(), uint4(-1), uint4(-1), Sampler::Filter::Point);
+
+    std::filesystem::create_directory(path);
+    out->captureToFile(0,0, (path / (channel.texname + "." + dumpFormat.extension)).string(), dumpFormat.id);
 }
 
 void CapturePass::renderUI(Gui::Widgets& widget)
@@ -132,11 +138,15 @@ void CapturePass::renderUI(Gui::Widgets& widget)
 
     widget.textbox("Destination Directory", dumpDir);
 
-    uint32_t format = dumpFormat.value;
-    if (widget.dropdown("File Format", ImageFormats, format))
-        for (auto& line : ImageFormats)
-            if (line.value == format)
-                dumpFormat = line;
+    auto value = (uint32_t)dumpFormat.id;
+    auto drop = Gui::DropdownList();
+    for (auto& format : DumpFormats)
+        drop.push_back({ (uint32_t)format.id, format.extension });
+
+    if (widget.dropdown("File Format", drop, value))
+        for (auto& format : DumpFormats)
+            if (value == (uint32_t)format.id)
+                dumpFormat = format;
 
     if (!capturing && widget.button("Start capturing")) {
         capturing = true;
