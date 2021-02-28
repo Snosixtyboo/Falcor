@@ -23,7 +23,7 @@ public:
 
 private:
     std::string dumpDir = ".";
-    ImageFormat dumpFormat = { Bitmap::FileFormat::PfmFile, "pfm", true };
+    ImageFormat dumpFormat = { Bitmap::FileFormat::PngFile, "png" };
     ViewpointGeneration viewpointMethod = ViewpointGeneration::FromFile;
     size_t captureInterval = 1000;
     size_t framesWait = 4;

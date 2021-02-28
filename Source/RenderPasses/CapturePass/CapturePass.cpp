@@ -7,12 +7,12 @@ const ChannelList DumpChannels =
 {
     { "color1x1",     "output_1x1",      "Full shading result"                                   },
     { "color2x2",     "output_2x2",      "Half shading result"                                   },
-    { "reproject",    "reproject_1x1",   "Previous frame reprojected shading result"             },
+    { "reproject",    "reproject_1x1",   "Previous frame reprojected shading result",       true },
     { "diffuse",      "diffuse_1x1",     "Diffuse color"                                         },
-    { "specular",     "specular_1x1",    "Specular color"                                        },
-    //{ "emissive",     "emissive_1x1",    "Emissive color"                                        },
+    { "specular",     "specular_1x1",    "Specular color + roughness",                      true },
+    //{ "emissive",     "emissive_1x1",    "Emissive color"                                      },
     { "normals",      "normals_1x1",      "View-space normals",                                  },
-    { "extras",       "extra_1x1",       "Roughness, opacity and visibility"                     },
+    { "extras",       "extra_1x1",       "Any additional inputs"                                 },
 };
 
 const auto ReprojectChannel = DumpChannels[2];
@@ -121,7 +121,7 @@ void CapturePass::dumpFile(RenderContext* context, const RenderData& data, Chann
         context->blit(data[channel.name]->asTexture()->getSRV(), out->getRTV(), uint4(-1), uint4(-1), Sampler::Filter::Point);
 
     std::filesystem::create_directory(path);
-    out->captureToFile(0,0, (path / (channel.texname + "." + dumpFormat.extension)).string(), dumpFormat.id);
+    out->captureToFile(0,0, (path / (channel.texname + "." + dumpFormat.extension)).string(), dumpFormat.id, channel.optional ? Bitmap::ExportFlags::ExportAlpha : Bitmap::ExportFlags::None);
 }
 
 void CapturePass::renderUI(Gui::Widgets& widget)

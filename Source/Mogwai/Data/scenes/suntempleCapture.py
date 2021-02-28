@@ -1,4 +1,3 @@
-# Graphs
 from falcor import *
 import os
 
@@ -40,7 +39,6 @@ fc.outputDir = '.'
 fc.baseFilename = 'Mogwai'
 
 def render_graph_DefaultRenderGraph():
-    g = RenderGraph('DeferredCaptureGraph')
     loadRenderPassLibrary('Antialiasing.dll')
     loadRenderPassLibrary('CSM.dll')
     loadRenderPassLibrary('CapturePass.dll')
@@ -52,6 +50,7 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('ToneMapper.dll')
     loadRenderPassLibrary('Reproject.dll')
 
+    g = RenderGraph('DeferredCaptureGraph')
     g.addPass(createPass('CSM'), 'CSM')
     g.addPass(createPass('CapturePass'), 'Capture')
     g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'GBufferRaster')

@@ -88,7 +88,7 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET {
 	psOut.normal = float4(sd.N * 0.5f + 0.5f, 1.0f);
 	psOut.viewNormal = mul(float4(sd.N, 0.0f), world2View);
 	psOut.motion = float4(motion * 0.5f + 0.5f, 0, 0);
-	psOut.extra = float4(sd.linearRoughness, sd.opacity, vis, 0);
+	psOut.extra = float4(vis, 0, 0, 0);
 
 	return psOut;
 }
