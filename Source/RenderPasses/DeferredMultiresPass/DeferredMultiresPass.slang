@@ -32,8 +32,7 @@ struct PsOut {
 	float4 color : SV_TARGET0;
 	float4 normal : SV_TARGET1;
 	float4 viewNormal : SV_TARGET2;
-	float4 extra : SV_TARGET3;
-	float4 motion : SV_TARGET4;
+	float4 motion : SV_TARGET3;
 };
 
 
@@ -44,21 +43,21 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET {
 	sd.emissive = gEmissive.SampleLevel(gSampler, texC, 0).xyz;
 	sd.posW = gPosW.SampleLevel(gSampler, texC, 0).xyz;
 
-  if (sd.posW.x == 0 && sd.posW.y == 0 && sd.posW.z == 0) {
-      discard;
-  }
+	if (sd.posW.x == 0 && sd.posW.y == 0 && sd.posW.z == 0) {
+		discard;
+	}
 
-  float4 v1 = mul(float4(sd.posW.xyz, 1), prevVP);
-  float4 v2 = mul(float4(sd.posW.xyz, 1), currVP);
-  float2 prevCrd = (v1.xy / v1.w) * float2(0.5, -0.5);
-  float2 currCrd = (v2.xy / v2.w) * float2(0.5, -0.5);
-  float2 motion = prevCrd - currCrd;
+	float4 v1 = mul(float4(sd.posW.xyz, 1), prevVP);
+	float4 v2 = mul(float4(sd.posW.xyz, 1), currVP);
+	float2 prevCrd = (v1.xy / v1.w) * float2(0.5, -0.5);
+	float2 currCrd = (v2.xy / v2.w) * float2(0.5, -0.5);
+	float2 motion = prevCrd - currCrd;
 
 	float4 diffuseOp = gDiffuse.SampleLevel(gSampler, texC, 0);
 	float4 specRough = gSpecRough.SampleLevel(gSampler, texC, 0);
 
-  sd.V = normalize(cameraPosition - sd.posW);
-  sd.N = normalize(gNormW.SampleLevel(gSampler, texC, 0).xyz);
+	sd.V = normalize(cameraPosition - sd.posW);
+	sd.N = normalize(gNormW.SampleLevel(gSampler, texC, 0).xyz);
 	sd.uv = texC;
 	sd.diffuse = diffuseOp.rgb;
 	sd.opacity = diffuseOp.a;
@@ -88,7 +87,5 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET {
 	psOut.normal = float4(sd.N * 0.5f + 0.5f, 1.0f);
 	psOut.viewNormal = mul(float4(sd.N, 0.0f), world2View);
 	psOut.motion = float4(motion * 0.5f + 0.5f, 0, 0);
-	psOut.extra = float4(vis, 0, 0, 0);
-
 	return psOut;
 }

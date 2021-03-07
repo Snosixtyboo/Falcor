@@ -29,17 +29,15 @@ m.scene.getLight(13).active = True
 # Window Configuration
 m.resizeSwapChain(1920, 1080)
 m.ui = True
-
-# Time Settings
 t.time = 0
 t.framerate = 0
-
-# Frame Capture
 fc.outputDir = '.'
 fc.baseFilename = 'Mogwai'
 
+# Pipeline
 def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('Antialiasing.dll')
+    loadRenderPassLibrary('BlitPass.dll')
     loadRenderPassLibrary('CSM.dll')
     loadRenderPassLibrary('CapturePass.dll')
     loadRenderPassLibrary('DepthPass.dll')
@@ -52,55 +50,56 @@ def render_graph_DefaultRenderGraph():
 
     g = RenderGraph('DeferredCaptureGraph')
     g.addPass(createPass('CSM'), 'CSM')
-    g.addPass(createPass('CapturePass'), 'Capture')
-    g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'GBufferRaster')
-    g.addPass(createPass('DeferredMultiresPass'), 'DeferredMultires')
+    g.addPass(createPass('BlitPass'), 'CSMBlit')
+    g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'Raster')
+    g.addPass(createPass('DeferredMultiresPass'), 'Shading')
     g.addPass(createPass('Reproject'), 'Reproject')
+    g.addPass(createPass('CapturePass'), 'Capture')
 
-    g.addEdge('GBufferRaster.depth', 'CSM.depth')
-    g.addEdge('CSM.visibility', 'DeferredMultires.visibility')
+    g.addEdge('Raster.depth', 'CSM.depth')
+    g.addEdge('CSM.visibility', 'Shading.visibility')
+    g.addEdge('CSM.visibility', 'CSMBlit.src')
 
-    g.addEdge('GBufferRaster.posW', 'DeferredMultires.posW')
-    g.addEdge('GBufferRaster.normW', 'DeferredMultires.normW')
-    g.addEdge('GBufferRaster.diffuseOpacity', 'DeferredMultires.diffuseOpacity')
-    g.addEdge('GBufferRaster.specRough', 'DeferredMultires.specRough')
-    g.addEdge('GBufferRaster.emissive', 'DeferredMultires.emissive')
-    g.addEdge('GBufferRaster.depth', 'DeferredMultires.depth')
+    g.addEdge('Raster.posW', 'Shading.posW')
+    g.addEdge('Raster.normW', 'Shading.normW')
+    g.addEdge('Raster.diffuseOpacity', 'Shading.diffuseOpacity')
+    g.addEdge('Raster.specRough', 'Shading.specRough')
+    g.addEdge('Raster.emissive', 'Shading.emissive')
+    g.addEdge('Raster.depth', 'Shading.depth')
 
     tonemap = createPass('ToneMapper', {'autoExposure': True})
     skybox = createPass('SkyBox')
     ssao = createPass('SSAO')
     fxaa = createPass('FXAA')
 
-    for x in ['1x1', '2x2']:
+    for x in ['1x1', '1x2', '2x1', '2x2']:
         g.addPass(skybox, f'SkyBox{x}')
         g.addPass(ssao, f'SSAO{x}')
         g.addPass(tonemap, f'ToneMapper{x}')
         g.addPass(fxaa, f'FXAA{x}')
 
-        g.addEdge('GBufferRaster.depth', f'SSAO{x}.depth')
-        g.addEdge('GBufferRaster.depth', f'SkyBox{x}.depth')
-        g.addEdge(f'SkyBox{x}.target', f'DeferredMultires.color{x}')
+        g.addEdge('Raster.depth', f'SSAO{x}.depth')
+        g.addEdge('Raster.depth', f'SkyBox{x}.depth')
+        g.addEdge(f'SkyBox{x}.target', f'Shading.color{x}')
 
-        g.addEdge('DeferredMultires.normalsOut', f'SSAO{x}.normals')
-        g.addEdge(f'DeferredMultires.color{x}', f'ToneMapper{x}.src')
+        g.addEdge('Shading.normalsOut', f'SSAO{x}.normals')
+        g.addEdge(f'Shading.color{x}', f'ToneMapper{x}.src')
         g.addEdge(f'ToneMapper{x}.dst', f'SSAO{x}.colorIn')
         g.addEdge(f'SSAO{x}.colorOut', f'FXAA{x}.src')
 
-    g.addEdge('DeferredMultires.motionOut', 'Reproject.motion')
+        g.addEdge(f'FXAA{x}.dst', f'Capture.color{x}')
+        g.markOutput(f'Capture.color{x}')
+
+    g.addEdge('Shading.motionOut', 'Reproject.motion')
     g.addEdge('FXAA1x1.dst', 'Reproject.input')
 
-    g.addEdge('FXAA1x1.dst', 'Capture.color1x1')
-    g.addEdge('FXAA2x2.dst', 'Capture.color2x2')
     g.addEdge('Reproject.output', 'Capture.reproject')
-    g.addEdge('GBufferRaster.diffuseOpacity', 'Capture.diffuse')
-    g.addEdge('GBufferRaster.specRough', 'Capture.specular')
-    #g.addEdge('GBufferRaster.emissive', 'Capture.emissive')
-    g.addEdge('DeferredMultires.viewNormalsOut', 'Capture.normals')
-    g.addEdge('DeferredMultires.extraOut', 'Capture.extras')
+    g.addEdge('Raster.diffuseOpacity', 'Capture.diffuse')
+    g.addEdge('Raster.specRough', 'Capture.specular')
+    #g.addEdge('Raster.emissive', 'Capture.emissive')
+    g.addEdge('Shading.viewNormalsOut', 'Capture.normals')
+    g.addEdge('CSMBlit.dst', 'Capture.extras')
 
-    g.markOutput('Capture.color1x1')
-    g.markOutput('Capture.color2x2')
     g.markOutput('Capture.reproject')
     g.markOutput('Capture.diffuse')
     g.markOutput('Capture.specular')

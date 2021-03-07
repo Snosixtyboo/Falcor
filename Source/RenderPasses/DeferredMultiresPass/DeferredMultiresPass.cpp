@@ -13,10 +13,14 @@ const ChannelList GBufferChannels =
     { "emissive",       "gEmissive",        "emissive color",               true},
 };
 
-const DeferredMultiresPass::ShadingRate ShadingRates[3] =
+const DeferredMultiresPass::ShadingRate ShadingRates[7] =
 {
     {D3D12_SHADING_RATE_4X4, "color4x4"},
+    {D3D12_SHADING_RATE_4X2, "color4x2"},
+    {D3D12_SHADING_RATE_2X4, "color2x4"},
     {D3D12_SHADING_RATE_2X2, "color2x2"},
+    {D3D12_SHADING_RATE_2X1, "color2x1"},
+    {D3D12_SHADING_RATE_1X2, "color1x2"},
     {D3D12_SHADING_RATE_1X1, "color1x1"}
 };
 
@@ -82,13 +86,12 @@ RenderPassReflection DeferredMultiresPass::reflect(const CompileData& data)
     addRenderPassInputs(reflector, GBufferChannels);
 
     for (const auto& rate : ShadingRates)
-        reflector.addInputOutput(rate.name, "Shading color").format(ResourceFormat::RGBA32Float).flags(RenderPassReflection::Field::Flags::Optional).texture2D(0, 0, 1);
+        reflector.addInputOutput(rate.name, "Shading color").format(ResourceFormat::RGBA32Float).flags(RenderPassReflection::Field::Flags::Optional);
 
     reflector.addInput("visibility", "Visibility buffer used for shadowing").flags(RenderPassReflection::Field::Flags::Optional);
-    reflector.addOutput("normalsOut", "Normalized world-space normal").format(ResourceFormat::RGBA8Unorm).texture2D(0, 0, 1);
-    reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
-    reflector.addOutput("extraOut", "Roughness, opacity and visibility in dedicated texture").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
-    reflector.addOutput("motionOut", "Motion vectors").format(ResourceFormat::RGBA32Float).texture2D(0, 0, 1);
+    reflector.addOutput("normalsOut", "Normalized world-space normal").format(ResourceFormat::RGBA8Unorm);
+    reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float);
+    reflector.addOutput("motionOut", "Motion vectors").format(ResourceFormat::RGBA32Float);
     return reflector;
 }
 
@@ -97,8 +100,7 @@ void DeferredMultiresPass::execute(RenderContext* context, const RenderData& dat
     if (mpScene) {
         mpFbo->attachColorTarget(data["normalsOut"]->asTexture(), 1);
         mpFbo->attachColorTarget(data["viewNormalsOut"]->asTexture(), 2);
-        mpFbo->attachColorTarget(data["extraOut"]->asTexture(), 3);
-        mpFbo->attachColorTarget(data["motionOut"]->asTexture(), 4);
+        mpFbo->attachColorTarget(data["motionOut"]->asTexture(), 3);
 
         mpPass["gPosW"] = data["posW"]->asTexture();
         mpPass["gNormW"] = data["normW"]->asTexture();;
@@ -119,7 +121,7 @@ void DeferredMultiresPass::execute(RenderContext* context, const RenderData& dat
 
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
         for (const auto& rate : ShadingRates) {
-            for (int i = 1; i < 5; i++)
+            for (int i = 1; i <= 3; i++)
                 context->clearRtv(mpFbo->getRenderTargetView(i).get(), float4(0, 0, 0, 1));
 
             directX->RSSetShadingRate(rate.id, nullptr);
