@@ -8,7 +8,7 @@ const ChannelList DumpChannels =
     { "reproject",    "reproject_1x1",   "Previous frame reprojected shading result",       true },
     { "diffuse",      "diffuse_1x1",     "Diffuse color"                                         },
     { "specular",     "specular_1x1",    "Specular color + roughness",                      true },
-    //{ "emissive",     "emissive_1x1",    "Emissive color"                                      },
+    { "emissive",     "emissive_1x1",    "Emissive color"                                      },
     { "normals",      "normals_1x1",      "View-space normals",                                  },
     { "extras",       "extra_1x1",       "Any additional inputs"                                 },
 
@@ -16,9 +16,9 @@ const ChannelList DumpChannels =
     { "color1x2",     "output_1x2",      "1x2 shading result"                                    },
     { "color2x1",     "output_2x1",      "2x1 shading result"                                    },
     { "color2x2",     "output_2x2",      "Half shading result"                                   },
-    //{ "color2x4",     "output_2x4",      "2x4 shading result"                                    },
-    //{ "color4x2",     "output_4x2",      "4x2 shading result"                                    },
-    //{ "color4x4",     "output_4x4",      "Quarter shading result"                                }
+    { "color2x4",     "output_2x4",      "2x4 shading result"                                    },
+    { "color4x2",     "output_4x2",      "4x2 shading result"                                    },
+    { "color4x4",     "output_4x4",      "Quarter shading result"                                }
 };
 
 const auto ReprojectChannel = DumpChannels[0];
@@ -105,7 +105,7 @@ void CapturePass::nextViewpoint()
 
 void CapturePass::dumpReproject(RenderContext* context, const RenderData& data)
 {
-    //dumpFile(context, data, ReprojectChannel);
+    dumpFile(context, data, ReprojectChannel);
 }
 
 void CapturePass::dumpFrame(RenderContext* context, const RenderData& data)

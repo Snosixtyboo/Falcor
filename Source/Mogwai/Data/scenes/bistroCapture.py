@@ -55,7 +55,7 @@ def render_graph_DefaultRenderGraph():
     ssao = createPass('SSAO')
     fxaa = createPass('FXAA')
 
-    for x in ['1x1', '2x2']:
+    for x in ['1x1', '1x2', '2x1', '2x2', '2x4', '4x2', '4x4']:
         g.addPass(skybox, f'SkyBox{x}')
         g.addPass(ssao, f'SSAO{x}')
         g.addPass(tonemap, f'ToneMapper{x}')
@@ -70,24 +70,23 @@ def render_graph_DefaultRenderGraph():
         g.addEdge(f'ToneMapper{x}.dst', f'SSAO{x}.colorIn')
         g.addEdge(f'SSAO{x}.colorOut', f'FXAA{x}.src')
 
+        g.addEdge(f'FXAA{x}.dst', f'Capture.color{x}')
+        g.markOutput(f'Capture.color{x}')
+
     g.addEdge('Shading.motionOut', 'Reproject.motion')
     g.addEdge('FXAA1x1.dst', 'Reproject.input')
 
-    g.addEdge('FXAA1x1.dst', 'Capture.color1x1')
-    g.addEdge('FXAA2x2.dst', 'Capture.color2x2')
     g.addEdge('Reproject.output', 'Capture.reproject')
     g.addEdge('Raster.diffuseOpacity', 'Capture.diffuse')
     g.addEdge('Raster.specRough', 'Capture.specular')
-    #g.addEdge('Raster.emissive', 'Capture.emissive')
+    g.addEdge('Raster.emissive', 'Capture.emissive')
     g.addEdge('Shading.viewNormalsOut', 'Capture.normals')
     g.addEdge('CSMBlit.dst', 'Capture.extras')
 
-    g.markOutput('Capture.color1x1')
-    g.markOutput('Capture.color2x2')
     g.markOutput('Capture.reproject')
     g.markOutput('Capture.diffuse')
     g.markOutput('Capture.specular')
-    #g.markOutput('Capture.emissive')
+    g.markOutput('Capture.emissive')
     g.markOutput('Capture.normals')
     g.markOutput('Capture.extras')
     return g
