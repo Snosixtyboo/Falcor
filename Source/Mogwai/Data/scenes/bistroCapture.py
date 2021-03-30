@@ -2,8 +2,8 @@ from falcor import *
 import os
 
 # Scene
-#m.loadScene(os.getenv('FALCOR_DATA').strip("/") + '/Bistro_v5_1/BistroInterior.fbx')
-m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/Bistro/BistroInterior.fbx')
+m.loadScene(os.getenv('FALCOR_DATA').strip("/") + '/Bistro_v5_1/BistroInterior.fbx')
+#m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/Bistro/BistroInterior.fbx')
 m.scene.renderSettings = SceneRenderSettings(useEnvLight=True, useAnalyticLights=True, useEmissiveLights=True)
 m.scene.camera.nearPlane = 0.10000000149011612
 m.scene.camera.farPlane = 100.0
@@ -71,7 +71,7 @@ def render_graph_DefaultRenderGraph():
         g.addEdge(f'SSAO{x}.colorOut', f'FXAA{x}.src')
 
         g.addEdge(f'FXAA{x}.dst', f'Capture.color{x}')
-        #g.markOutput(f'Capture.color{x}')
+        g.markOutput(f'Capture.color{x}')
 
     g.addEdge('Shading.motionOut', 'Reproject.motion')
     g.addEdge('FXAA1x1.dst', 'Reproject.input')
@@ -83,17 +83,12 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('Shading.viewNormalsOut', 'Capture.normals')
     g.addEdge('CSMBlit.dst', 'Capture.extras')
 
-    #g.markOutput('Capture.reproject')
-    #g.markOutput('Capture.diffuse')
-    #g.markOutput('Capture.specular')
-    #g.markOutput('Capture.emissive')
-    #g.markOutput('Capture.normals')
-    #g.markOutput('Capture.extras')
-
-    loadRenderPassLibrary('AdaptiveVRS.dll')
-    g.addPass(createPass('AdaptiveVRS'), 'AdaptiveVRS')
-    g.addEdge('Reproject.output', 'AdaptiveVRS.input')
-    g.markOutput('AdaptiveVRS.rate')
+    g.markOutput('Capture.reproject')
+    g.markOutput('Capture.diffuse')
+    g.markOutput('Capture.specular')
+    g.markOutput('Capture.emissive')
+    g.markOutput('Capture.normals')
+    g.markOutput('Capture.extras')
 
     return g
 

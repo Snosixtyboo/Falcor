@@ -31,5 +31,19 @@ void main(uint3 tile : SV_DispatchThreadID)
     }
 
     float luminance = sum / (8.0 * 8.0 * 3.0) + 0.0001;
-    rate[tile.xy] = float3(diff / luminance, 0.0);
+    float2 weber = diff / luminance;
+
+    /*if (weber.x < ) {
+      if (weber.y < ) {
+        rate[tile.xy] = 3;
+      } else {
+        rate[tile.xy] = 2;
+      }
+    } else if (weber.y < ) {
+      rate[tile.xy] = 1;
+    } else {
+      rate[tile.xy] = 0;
+    }*/
+
+    rate[tile.xy] = float3(weber, 0.0);
 }
