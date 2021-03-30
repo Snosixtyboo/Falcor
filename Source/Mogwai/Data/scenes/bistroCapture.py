@@ -89,6 +89,12 @@ def render_graph_DefaultRenderGraph():
     g.markOutput('Capture.emissive')
     g.markOutput('Capture.normals')
     g.markOutput('Capture.extras')
+
+    loadRenderPassLibrary('AdaptiveVRS.dll')
+    g.addPass(createPass('AdaptiveVRS'), 'AdaptiveVRS')
+    g.addEdge('FXAA1x1.dst', 'AdaptiveVRS.color')
+    g.markOutput('AdaptiveVRS.rate')
+
     return g
 
 m.addGraph(render_graph_DefaultRenderGraph())
