@@ -21,12 +21,12 @@ Reproject::Reproject()
     shader["sampler"] = Sampler::create(Sampler::Desc().setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border));
 }
 
-RenderPassReflection Reproject::reflect(const CompileData& compileData)
+RenderPassReflection Reproject::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
     reflector.addInput("input", "Texture to be reprojected with 1 frame delay.");
     reflector.addInput("motion", "Screen-space motion between current and previous frame.");
-    reflector.addInternal("previous", "Previous frame storage.").format(ResourceFormat::RGB32Float);
+    reflector.addInternal("previous", "Previous frame storage.");
     reflector.addOutput("output", "Reprojected delayed input.");
     return reflector;
 }

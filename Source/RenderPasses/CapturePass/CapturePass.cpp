@@ -8,7 +8,7 @@ const ChannelList DumpChannels =
     { "reproject",    "reproject_1x1",   "Previous frame reprojected shading result",       true },
     { "diffuse",      "diffuse_1x1",     "Diffuse color"                                         },
     { "specular",     "specular_1x1",    "Specular color + roughness",                      true },
-    { "emissive",     "emissive_1x1",    "Emissive color"                                      },
+    { "emissive",     "emissive_1x1",    "Emissive color"                                        },
     { "normals",      "normals_1x1",      "View-space normals",                                  },
     { "extras",       "extra_1x1",       "Any additional inputs"                                 },
 
