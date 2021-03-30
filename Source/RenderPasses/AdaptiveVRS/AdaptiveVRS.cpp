@@ -22,7 +22,7 @@ AdaptiveVRS::AdaptiveVRS()
 RenderPassReflection AdaptiveVRS::reflect(const CompileData& compileData)
 {
     RenderPassReflection reflector;
-    reflector.addInput("color", "Input").bindFlags(ResourceBindFlags::ShaderResource);
+    reflector.addInput("input", "Input").bindFlags(ResourceBindFlags::ShaderResource);
     reflector.addOutput("rate", "Rate").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::RGBA32Float); // todo change output format
     return reflector;
 }
@@ -37,6 +37,6 @@ void AdaptiveVRS::compile(RenderContext* context, const CompileData& data)
 void AdaptiveVRS::execute(RenderContext* context, const RenderData& data)
 {
     shader["rate"] = data["rate"]->asTexture();
-    shader["color"] = data["color"]->asTexture();
+    shader["input"] = data["input"]->asTexture();
     shader->execute(context, resolution.x, resolution.y);
 }

@@ -71,7 +71,7 @@ def render_graph_DefaultRenderGraph():
         g.addEdge(f'SSAO{x}.colorOut', f'FXAA{x}.src')
 
         g.addEdge(f'FXAA{x}.dst', f'Capture.color{x}')
-        g.markOutput(f'Capture.color{x}')
+        #g.markOutput(f'Capture.color{x}')
 
     g.addEdge('Shading.motionOut', 'Reproject.motion')
     g.addEdge('FXAA1x1.dst', 'Reproject.input')
@@ -83,16 +83,16 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('Shading.viewNormalsOut', 'Capture.normals')
     g.addEdge('CSMBlit.dst', 'Capture.extras')
 
-    g.markOutput('Capture.reproject')
-    g.markOutput('Capture.diffuse')
-    g.markOutput('Capture.specular')
-    g.markOutput('Capture.emissive')
-    g.markOutput('Capture.normals')
-    g.markOutput('Capture.extras')
+    #g.markOutput('Capture.reproject')
+    #g.markOutput('Capture.diffuse')
+    #g.markOutput('Capture.specular')
+    #g.markOutput('Capture.emissive')
+    #g.markOutput('Capture.normals')
+    #g.markOutput('Capture.extras')
 
     loadRenderPassLibrary('AdaptiveVRS.dll')
     g.addPass(createPass('AdaptiveVRS'), 'AdaptiveVRS')
-    g.addEdge('FXAA1x1.dst', 'AdaptiveVRS.color')
+    g.addEdge('Reproject.output', 'AdaptiveVRS.input')
     g.markOutput('AdaptiveVRS.rate')
 
     return g
