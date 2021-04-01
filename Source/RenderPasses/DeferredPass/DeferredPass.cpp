@@ -84,8 +84,8 @@ void DeferredPass::execute(RenderContext* context, const RenderData& data)
         pass["lights"] = lightsBuffer;
 
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
-        //directX->RSSetShadingRateImage(???); needs image!
         framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
+        directX->RSSetShadingRateImage(data["vrs"]->getApiHandle());
         pass->execute(context, framebuffers);
     }
 }
