@@ -1,4 +1,4 @@
-#include "DeferredMultiresPass.h"
+#include "DeferredPass.h"
 #include <filesystem>
 #include <string>
 #include <cstdlib>
@@ -13,17 +13,6 @@ const ChannelList GBuffers =
     { "emissive",       "gEmissive",        "emissive color",               true},
 };
 
-const DeferredMultiresPass::ShadingRate ShadingRates[7] =
-{
-    {D3D12_SHADING_RATE_4X4, "color4x4"},
-    {D3D12_SHADING_RATE_4X2, "color4x2"},
-    {D3D12_SHADING_RATE_2X4, "color2x4"},
-    {D3D12_SHADING_RATE_2X2, "color2x2"},
-    {D3D12_SHADING_RATE_2X1, "color2x1"},
-    {D3D12_SHADING_RATE_1X2, "color1x2"},
-    {D3D12_SHADING_RATE_1X1, "color1x1"}
-};
-
 // Don't remove this. it's required for hot-reload to function properly
 extern "C" __declspec(dllexport) const char* getProjDir()
 {
@@ -32,20 +21,20 @@ extern "C" __declspec(dllexport) const char* getProjDir()
 
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
-    lib.registerClass("DeferredMultiresPass", "Deferred rasterization at multiple shading rates.", DeferredMultiresPass::create);
+    lib.registerClass("DeferredPass", "Deferred rasterization.", DeferredPass::create);
 }
 
-DeferredMultiresPass::DeferredMultiresPass()
+DeferredPass::DeferredPass()
 {
     framebuffers = Fbo::create();
-    pass = FullScreenPass::create("RenderPasses/DeferredMultiresPass/DeferredMultiresPass.slang");
+    pass = FullScreenPass::create("RenderPasses/DeferredPass/DeferredPass.slang");
     pass["gSampler"] = Sampler::create(Sampler::Desc().setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point));
     sceneBlock = ParameterBlock::create(pass->getProgram()->getReflector()->getParameterBlock("tScene"));
     vars = GraphicsVars::create(pass->getProgram()->getReflector());
 }
 
 
-void DeferredMultiresPass::setScene(RenderContext* context, const Scene::SharedPtr& scene)
+void DeferredPass::setScene(RenderContext* context, const Scene::SharedPtr& scene)
 {
     if (scene) {
         this->scene = scene;
@@ -71,50 +60,32 @@ void DeferredMultiresPass::setScene(RenderContext* context, const Scene::SharedP
     }
 }
 
-DeferredMultiresPass::SharedPtr DeferredMultiresPass::create(RenderContext* context, const Dictionary& dict)
-{
-    return SharedPtr(new DeferredMultiresPass);
-}
-
-RenderPassReflection DeferredMultiresPass::reflect(const CompileData& data)
+RenderPassReflection DeferredPass::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
     addRenderPassInputs(reflector, GBuffers);
-
-    for (const auto& rate : ShadingRates)
-        reflector.addInputOutput(rate.name, "Shading color").format(ResourceFormat::RGBA32Float).flags(RenderPassReflection::Field::Flags::Optional);
-
-    reflector.addInput("visibility", "Visibility buffer used for shadowing").flags(RenderPassReflection::Field::Flags::Optional);
-    reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float);
+    reflector.addInputOutput("output", "Shaded result").format(ResourceFormat::RGBA32Float).flags(RenderPassReflection::Field::Flags::Optional);
+    reflector.addInput("visibility", "Visibility for shadowing").flags(RenderPassReflection::Field::Flags::Optional);
+    reflector.addInput("vrs", "Variable rate shading image").flags(RenderPassReflection::Field::Flags::Optional);
     return reflector;
 }
 
-void DeferredMultiresPass::execute(RenderContext* context, const RenderData& data)
+void DeferredPass::execute(RenderContext* context, const RenderData& data)
 {
     if (scene) {
-        framebuffers->attachColorTarget(data["viewNormalsOut"]->asTexture(), 1);
-
         pass["gPosW"] = data["posW"]->asTexture();
-        pass["gNormW"] = data["normW"]->asTexture();;
+        pass["gNormW"] = data["normW"]->asTexture();
         pass["gDiffuse"] = data["diffuseOpacity"]->asTexture();;
         pass["gSpecRough"] = data["specRough"]->asTexture();
         pass["gEmissive"] = data["emissive"]->asTexture();
         pass["gVisibility"] = data["visibility"]->asTexture();
+        pass["constants"]["cameraPosition"] = scene->getCamera()->getPosition();
+        pass["constants"]["lightCount"] = numLights;
         pass["lights"] = lightsBuffer;
 
-        auto constants = pass["constants"];
-        constants["cameraPosition"] = scene->getCamera()->getPosition();
-        constants["world2View"] = scene->getCamera()->getViewMatrix();
-        constants["lightCount"] = numLights;
-
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
-        for (const auto& rate : ShadingRates) {
-            for (int i = 1; i <= 1; i++)
-                context->clearRtv(framebuffers->getRenderTargetView(i).get(), float4(0, 0, 0, 1));
-
-            directX->RSSetShadingRate(rate.id, nullptr);
-            framebuffers->attachColorTarget(data[rate.name]->asTexture(), 0);
-            pass->execute(context, framebuffers);
-        }
+        //directX->RSSetShadingRateImage(???); needs image!
+        framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
+        pass->execute(context, framebuffers);
     }
 }

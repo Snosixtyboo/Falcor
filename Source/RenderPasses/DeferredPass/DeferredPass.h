@@ -5,14 +5,14 @@
 
 using namespace Falcor;
 
-class DeferredMultiresPass : public RenderPass
+class DeferredPass : public RenderPass
 {
 public:
     struct ShadingRate { D3D12_SHADING_RATE id; std::string name; };
-    using SharedPtr = std::shared_ptr<DeferredMultiresPass>;
+    using SharedPtr = std::shared_ptr<DeferredPass>;
 
-    static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {}) {return SharedPtr(new DeferredMultiresPass);};
-    virtual std::string getDesc() override { return "Deferred rasterization at multiple shading rates."; }
+    static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {}) {return SharedPtr(new DeferredPass);};
+    virtual std::string getDesc() override { return "Deferred rasterization at given shading rate."; }
 
     virtual RenderPassReflection reflect(const CompileData& data) override;
     virtual void compile(RenderContext* context, const CompileData& data) override {}
@@ -31,5 +31,5 @@ private:
     Buffer::SharedPtr lightsBuffer;
     LightProbe::SharedPtr lightProbe;
 
-    DeferredMultiresPass();
+    DeferredPass();
 };
