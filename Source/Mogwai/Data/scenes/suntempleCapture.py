@@ -80,9 +80,9 @@ def render_graph_DefaultRenderGraph():
 
         g.addEdge('Raster.depth', f'SSAO{x}.depth')
         g.addEdge('Raster.depth', f'SkyBox{x}.depth')
-        g.addEdge(f'SkyBox{x}.target', f'Shading.color{x}')
+        g.addEdge('Raster.normW', f'SSAO{x}.normals')
 
-        g.addEdge('Shading.normalsOut', f'SSAO{x}.normals')
+        g.addEdge(f'SkyBox{x}.target', f'Shading.color{x}')
         g.addEdge(f'Shading.color{x}', f'ToneMapper{x}.src')
         g.addEdge(f'ToneMapper{x}.dst', f'SSAO{x}.colorIn')
         g.addEdge(f'SSAO{x}.colorOut', f'FXAA{x}.src')
@@ -90,13 +90,13 @@ def render_graph_DefaultRenderGraph():
         g.addEdge(f'FXAA{x}.dst', f'Capture.color{x}')
         g.markOutput(f'Capture.color{x}')
 
-    g.addEdge('Shading.motionOut', 'Reproject.motion')
+    g.addEdge('Raster.mvec', 'Reproject.motion')
     g.addEdge('FXAA1x1.dst', 'Reproject.input')
 
-    g.addEdge('Reproject.output', 'Capture.reproject')
     g.addEdge('Raster.diffuseOpacity', 'Capture.diffuse')
     g.addEdge('Raster.specRough', 'Capture.specular')
     g.addEdge('Raster.emissive', 'Capture.emissive')
+    g.addEdge('Reproject.output', 'Capture.reproject')
     g.addEdge('Shading.viewNormalsOut', 'Capture.normals')
     g.addEdge('CSMBlit.dst', 'Capture.extras')
 

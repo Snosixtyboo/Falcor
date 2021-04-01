@@ -4,10 +4,8 @@ import Scene.Lights.LightProbeData;
 import Scene.Shading;
 import Utils.Helpers;
 
-cbuffer PerFrameCB {
-	matrix <float, 4, 4> world2View;
-	matrix <float, 4, 4> prevVP;
-	matrix <float, 4, 4> currVP;
+cbuffer constants {
+	matrix <float, 4, 4> world2View; //gScene.camera.data.viewMat
 	float3 cameraPosition;
 	int lightCount;
 };
@@ -30,15 +28,10 @@ struct TinyScene {
 
 struct PsOut {
 	float4 color : SV_TARGET0;
-	float4 normal : SV_TARGET1;
-	float4 viewNormal : SV_TARGET2;
-	float4 motion : SV_TARGET3;
+	float4 viewNormal : SV_TARGET1;
 };
 
-
 PsOut main(float2 texC : TEXCOORD) : SV_TARGET {
-	PsOut psOut;
-
 	ShadingData sd;
 	sd.emissive = gEmissive.SampleLevel(gSampler, texC, 0).xyz;
 	sd.posW = gPosW.SampleLevel(gSampler, texC, 0).xyz;
@@ -46,12 +39,6 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET {
 	if (sd.posW.x == 0 && sd.posW.y == 0 && sd.posW.z == 0) {
 		discard;
 	}
-
-	float4 v1 = mul(float4(sd.posW.xyz, 1), prevVP);
-	float4 v2 = mul(float4(sd.posW.xyz, 1), currVP);
-	float2 prevCrd = (v1.xy / v1.w) * float2(0.5, -0.5);
-	float2 currCrd = (v2.xy / v2.w) * float2(0.5, -0.5);
-	float2 motion = prevCrd - currCrd;
 
 	float4 diffuseOp = gDiffuse.SampleLevel(gSampler, texC, 0);
 	float4 specRough = gSpecRough.SampleLevel(gSampler, texC, 0);
@@ -66,7 +53,7 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET {
 	sd.linearRoughness = specRough.a;
 	sd.ggxAlpha = max(0.0064, sd.linearRoughness * sd.linearRoughness);
 
-	float4 finalColor = float4(0, 0, 0, 1);
+	float4 color = float4(0, 0, 0, 1);
 	float vis = gVisibility.SampleLevel(gSampler, texC, 0).r;
 
 	for (uint l = 0; l < lightCount; l++) {
@@ -76,16 +63,15 @@ PsOut main(float2 texC : TEXCOORD) : SV_TARGET {
 			shadowFactor *= sd.opacity;
 		}
 
-		finalColor.rgb += evalMaterial(sd, lights[l], shadowFactor).color;
+		color.rgb += evalMaterial(sd, lights[l], shadowFactor).color;
 	}
 
-	finalColor.a = sd.opacity;
-	finalColor.rgb += sd.emissive;
-	finalColor.rgb += evalMaterial(sd, tScene.lightProbe).color;
+	color.a = sd.opacity;
+	color.rgb += sd.emissive;
+	color.rgb += evalMaterial(sd, tScene.lightProbe).color;
 
-	psOut.color = finalColor;
-	psOut.normal = float4(sd.N * 0.5f + 0.5f, 1.0f);
+	PsOut psOut;
+	psOut.color = color;
 	psOut.viewNormal = mul(float4(sd.N, 0.0f), world2View);
-	psOut.motion = float4(motion * 0.5f + 0.5f, 0, 0);
 	return psOut;
 }

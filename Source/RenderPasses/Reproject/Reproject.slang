@@ -6,10 +6,7 @@ struct Out {
 }
 
 Out main(float2 uv : TEXCOORD) : SV_TARGET {
-  float2 motion = motion2D.SampleLevel(sampler, uv, 0).rg;
-  motion = motion * 2.0f - 1.0f;
-
   Out out;
-  out.reproject = input2D.SampleLevel(sampler, uv + motion, 0);
+  out.reproject = input2D.SampleLevel(sampler, uv + motion2D[uv].xy, 0);
   return out;
 }

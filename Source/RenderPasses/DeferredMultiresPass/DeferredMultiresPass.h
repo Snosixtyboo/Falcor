@@ -20,16 +20,15 @@ public:
     virtual void setScene(RenderContext* context, const Scene::SharedPtr& scene) override;
 
 private:
-    FullScreenPass::SharedPtr mpPass;
-    Fbo::SharedPtr mpFbo;
-    GraphicsVars::SharedPtr mpVars;
-    Scene::SharedPtr mpScene;
-    ParameterBlock::SharedPtr mpSceneBlock;
+    FullScreenPass::SharedPtr pass;
+    Fbo::SharedPtr framebuffers;
+    GraphicsVars::SharedPtr vars;
+    Scene::SharedPtr scene;
+    ParameterBlock::SharedPtr sceneBlock;
     ID3D12GraphicsCommandList5Ptr directX;
-    glm::mat4x4 prevVP;
 
     int numLights;
-    Buffer::SharedPtr mpLightsBuffer;
+    Buffer::SharedPtr lightsBuffer;
     LightProbe::SharedPtr lightProbe;
 
     DeferredMultiresPass();

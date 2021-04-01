@@ -72,7 +72,7 @@ float4 main(float2 texC : TEXCOORD) : SV_TARGET0
 
     // Calculate world position of pixel
     float3 posW = getPosition(texC).xyz;
-    float3 normal = normalize(gNormalTex.Sample(gTextureSampler, texC).xyz * 2.0f - 1.0f);
+    float3 normal = normalize(gNormalTex.Sample(gTextureSampler, texC).xyz);
     float originDist = length(posW - gCamera.data.posW);
     float3 randDir = gNoiseTex.Sample(gNoiseSampler, texC * gData.noiseScale).xyz * 2.0f - 1.0f;
 
