@@ -75,7 +75,7 @@ RenderPassReflection TAA::reflect(const CompileData& compileData)
     RenderPassReflection reflection;
     reflection.addInput(kMotionVec, "Screen-space motion vectors");
     reflection.addInput(kColorIn, "Color-buffer of the current frame");
-    reflection.addOutput(kColorOut, "Anti-aliased color buffer");
+    reflection.addInputOutput(kColorOut, "Anti-aliased color buffer").flags(RenderPassReflection::Field::Flags::Optional);
     return reflection;
 }
 

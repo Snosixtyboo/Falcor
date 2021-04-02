@@ -64,7 +64,7 @@ RenderPassReflection DeferredPass::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
     addRenderPassInputs(reflector, GBuffers);
-    reflector.addInputOutput("output", "Shaded result").format(ResourceFormat::RGBA32Float).flags(RenderPassReflection::Field::Flags::Optional);
+    reflector.addInputOutput("output", "Shaded result").flags(RenderPassReflection::Field::Flags::Optional);
     reflector.addInput("visibility", "Visibility for shadowing").flags(RenderPassReflection::Field::Flags::Optional);
     reflector.addInput("vrs", "Variable rate shading image").flags(RenderPassReflection::Field::Flags::Optional);
     return reflector;
@@ -85,7 +85,7 @@ void DeferredPass::execute(RenderContext* context, const RenderData& data)
 
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
         framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
-        directX->RSSetShadingRateImage(data["vrs"]->getApiHandle());
+        //directX->RSSetShadingRateImage(data["vrs"]->getApiHandle());
         pass->execute(context, framebuffers);
     }
 }

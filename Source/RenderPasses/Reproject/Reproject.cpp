@@ -24,19 +24,16 @@ Reproject::Reproject()
 RenderPassReflection Reproject::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
-    reflector.addInput("input", "Texture to be reprojected with 1 frame delay.");
-    reflector.addInput("motion", "Screen-space motion between current and previous frame.");
-    reflector.addInternal("previous", "Previous frame storage.");
-    reflector.addOutput("output", "Reprojected delayed input.");
+    reflector.addInput("motion", "Screen-space motion vectors.");
+    reflector.addOutput("buffer", "Texture to be reprojected next frame.");
+    reflector.addOutput("output", "Reprojected texture.");
     return reflector;
 }
 
 void Reproject::execute(RenderContext* context, const RenderData& data)
 {
     framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
-    shader["input2D"] = data["previous"]->asTexture();
-    shader["motion2D"] = data["motion"]->asTexture();
+    shader["buffer"] = data["buffer"]->asTexture();
+    shader["motion"] = data["motion"]->asTexture();
     shader->execute(context, framebuffers);
-
-    context->blit(data["input"]->asTexture()->getSRV(), data["previous"]->asTexture()->getRTV(), uint4(-1), uint4(-1), Sampler::Filter::Point); // save frame for next render
 }

@@ -1,12 +1,12 @@
-Texture2D input2D, motion2D;
+Texture2D buffer, motion;
 SamplerState sampler;
 
 struct Out {
-	float4 reproject : SV_TARGET0;
+	float4 reprojected : SV_TARGET0;
 }
 
 Out main(float2 uv : TEXCOORD) : SV_TARGET {
   Out out;
-  out.reproject = input2D.SampleLevel(sampler, uv + motion2D[uv].xy, 0);
+  out.reprojected = buffer.SampleLevel(sampler, uv + motion[uv].xy, 0);
   return out;
 }
