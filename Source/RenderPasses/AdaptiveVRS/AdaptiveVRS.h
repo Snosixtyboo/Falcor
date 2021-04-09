@@ -1,7 +1,5 @@
 #pragma once
 #include "Falcor.h"
-#include "FalcorExperimental.h"
-#include "RenderGraph/RenderPassHelpers.h"
 
 using namespace Falcor;
 
@@ -10,6 +8,7 @@ class AdaptiveVRS : public RenderPass
 private:
     ComputePass::SharedPtr shader;
     uint2 resolution = { 0, 0 };
+    float limit = 0.5;
     AdaptiveVRS();
 
 public:
@@ -20,4 +19,5 @@ public:
     virtual RenderPassReflection reflect(const CompileData& data) override;
     virtual void execute(RenderContext* context, const RenderData& data) override;
     virtual void compile(RenderContext* context, const CompileData& data) override;
+    virtual void renderUI(Gui::Widgets& widget) override;
 };

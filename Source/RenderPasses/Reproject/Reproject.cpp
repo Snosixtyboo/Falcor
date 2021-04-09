@@ -1,7 +1,4 @@
 #include "Reproject.h"
-#include <filesystem>
-#include <string>
-#include <cstdlib>
 
 // Don't remove this. it's required for hot-reload to function properly
 extern "C" __declspec(dllexport) const char* getProjDir()

@@ -1,7 +1,15 @@
 #include "DeferredMultiresPass.h"
-#include <filesystem>
-#include <string>
-#include <cstdlib>
+
+// Don't remove this. it's required for hot-reload to function properly
+extern "C" __declspec(dllexport) const char* getProjDir()
+{
+    return PROJECT_DIR;
+}
+
+extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary & lib)
+{
+    lib.registerClass("DeferredMultiresPass", "Deferred rasterization at multiple shading rates.", DeferredMultiresPass::create);
+}
 
 const ChannelList GBuffers =
 {
@@ -23,17 +31,6 @@ const DeferredMultiresPass::ShadingRate ShadingRates[7] =
     {D3D12_SHADING_RATE_1X2, "color1x2"},
     {D3D12_SHADING_RATE_1X1, "color1x1"}
 };
-
-// Don't remove this. it's required for hot-reload to function properly
-extern "C" __declspec(dllexport) const char* getProjDir()
-{
-    return PROJECT_DIR;
-}
-
-extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
-{
-    lib.registerClass("DeferredMultiresPass", "Deferred rasterization at multiple shading rates.", DeferredMultiresPass::create);
-}
 
 DeferredMultiresPass::DeferredMultiresPass()
 {
@@ -71,21 +68,16 @@ void DeferredMultiresPass::setScene(RenderContext* context, const Scene::SharedP
     }
 }
 
-DeferredMultiresPass::SharedPtr DeferredMultiresPass::create(RenderContext* context, const Dictionary& dict)
-{
-    return SharedPtr(new DeferredMultiresPass);
-}
-
 RenderPassReflection DeferredMultiresPass::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
     addRenderPassInputs(reflector, GBuffers);
 
     for (const auto& rate : ShadingRates)
-        reflector.addInputOutput(rate.name, "Shading color").format(ResourceFormat::RGBA32Float).flags(RenderPassReflection::Field::Flags::Optional);
+        reflector.addInputOutput(rate.name, "Shading color").flags(RenderPassReflection::Field::Flags::Optional);
 
     reflector.addInput("visibility", "Visibility buffer used for shadowing").flags(RenderPassReflection::Field::Flags::Optional);
-    reflector.addOutput("viewNormalsOut", "View-space normals").format(ResourceFormat::RGBA32Float);
+    reflector.addOutput("viewNormalsOut", "View-space normals");
     return reflector;
 }
 

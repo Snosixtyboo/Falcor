@@ -1,7 +1,16 @@
 #include "CapturePass.h"
 #include <filesystem>
-#include <string>
-#include <cstdlib>
+
+// Don't remove this. it's required for hot-reload to function properly
+extern "C" __declspec(dllexport) const char* getProjDir()
+{
+    return PROJECT_DIR;
+}
+
+extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary & lib)
+{
+    lib.registerClass("CapturePass", "Dumps rendering data at multiple shading resolutions to image files.", CapturePass::create);
+}
 
 const ChannelList DumpChannels =
 {
@@ -35,17 +44,6 @@ const CapturePass::ImageFormat DumpFormats[] = {
     { Bitmap::FileFormat::PngFile, "png" },
     { Bitmap::FileFormat::TgaFile, "tga" },
 };
-
-// Don't remove this. it's required for hot-reload to function properly
-extern "C" __declspec(dllexport) const char* getProjDir()
-{
-    return PROJECT_DIR;
-}
-
-extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
-{
-    lib.registerClass("CapturePass", "Dumps rendering data at multiple shading resolutions to image files.", CapturePass::create);
-}
 
 CapturePass::SharedPtr CapturePass::create(RenderContext* pRenderContext, const Dictionary& dict)
 {

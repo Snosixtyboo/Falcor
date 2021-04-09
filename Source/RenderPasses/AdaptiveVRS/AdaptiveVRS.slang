@@ -7,17 +7,17 @@ float luma(uint2 uv) {
   return 0.299*color.r + 0.587*color.g + 0.114*color.b;
 }
 
-[numthreads(16, 16, 1)]
+[numthreads(32, 32, 1)]
 void main(uint3 tile : SV_DispatchThreadID)
 {
-    uint2 uv = tile.xy * 8;
-    if (any(uv > resolution)) return;
+    if (any(tile.xy > resolution)) return;
 
-    float sum = 0;
+    uint2 uv = tile.xy * 16;
     float2 diff = (0.0, 0.0);
+    float sum = 0;
 
-    for (uint u = 0; u<8; u+=2) {
-      for (uint v = 0; v<8; v+=2) {
+    for (uint u = 0; u<16; u+=2) {
+      for (uint v = 0; v<16; v+=2) {
         float a = luma(uv);
         float b = luma(uv + uint2(1,0));
         float c = luma(uv + uint2(0,1));
@@ -30,20 +30,28 @@ void main(uint3 tile : SV_DispatchThreadID)
       }
     }
 
-    float luminance = sum / (8.0 * 8.0 * 3.0) + 0.0001;
+    float luminance = sum / (16.0 * 16.0 * 3.0) + 0.0001;
     float2 weber = diff / luminance;
 
-    /*if (weber.x < ) {
-      if (weber.y < ) {
-        rate[tile.xy] = 3;
+    if (weber.x < LIMIT) {
+      if (weber.y < LIMIT) {
+        rate[tile.xy] = VRS_2x2;
       } else {
-        rate[tile.xy] = 2;
+        rate[tile.xy] = VRS_2x1;
       }
-    } else if (weber.y < ) {
-      rate[tile.xy] = 1;
+    } else if (weber.y < LIMIT) {
+      rate[tile.xy] = VRS_1x2;
     } else {
-      rate[tile.xy] = 0;
-    }*/
+      rate[tile.xy] = VRS_1x1;
+    }
 
-    rate[tile.xy] = float3(weber, 0.0);
+    if (rate[tile.xy].r == VRS_2x2)
+      rate[tile.xy] = float3(0.0, 1.0, 0.0);
+    else if (rate[tile.xy].r == VRS_1x1)
+      rate[tile.xy] = float3(1.0, 0.0, 0.0);
+    else if (rate[tile.xy].r == VRS_1x2)
+      rate[tile.xy] = float3(0.0, 0.0, 1.0);
+    else
+      rate[tile.xy] = float3(1.0, 1.0, 0.0);
+    //rate[tile.xy] = float3(weber, 0.0);
 }
