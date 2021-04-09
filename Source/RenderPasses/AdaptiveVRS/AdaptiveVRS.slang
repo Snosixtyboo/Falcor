@@ -30,7 +30,7 @@ void main(uint3 tile : SV_DispatchThreadID)
       }
     }
 
-    float luminance = sum / (16.0 * 16.0 * 3.0) + 0.0001;
+    float luminance = sum / (16.0 * 16.0 * 3.0) + 0.001;
     float2 weber = diff / luminance;
 
     if (weber.x < LIMIT) {
@@ -45,6 +45,8 @@ void main(uint3 tile : SV_DispatchThreadID)
       rate[tile.xy] = VRS_1x1;
     }
 
+    /*
+    // tile color preview
     if (rate[tile.xy].r == VRS_2x2)
       rate[tile.xy] = float3(0.0, 1.0, 0.0);
     else if (rate[tile.xy].r == VRS_1x1)
@@ -52,6 +54,8 @@ void main(uint3 tile : SV_DispatchThreadID)
     else if (rate[tile.xy].r == VRS_1x2)
       rate[tile.xy] = float3(0.0, 0.0, 1.0);
     else
-      rate[tile.xy] = float3(1.0, 1.0, 0.0);
+      rate[tile.xy] = float3(1.0, 1.0, 0.0);*/
+
+    // metric value
     //rate[tile.xy] = float3(weber, 0.0);
 }

@@ -27,7 +27,7 @@ RenderPassReflection AdaptiveVRS::reflect(const CompileData& compileData)
 {
     RenderPassReflection reflector;
     reflector.addInput("input", "Input").bindFlags(ResourceBindFlags::ShaderResource);
-    reflector.addOutput("rate", "Rate").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::RGBA32Float); // todo change output format
+    reflector.addOutput("rate", "Rate").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::R8Uint);
     return reflector;
 }
 

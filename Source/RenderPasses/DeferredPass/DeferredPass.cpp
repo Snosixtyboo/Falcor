@@ -85,7 +85,7 @@ void DeferredPass::execute(RenderContext* context, const RenderData& data)
 
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
         framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
-        //directX->RSSetShadingRateImage(data["vrs"]->getApiHandle());
+        directX->RSSetShadingRateImage(data["vrs"]->getApiHandle());
         pass->execute(context, framebuffers);
     }
 }
