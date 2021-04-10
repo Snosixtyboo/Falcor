@@ -1,6 +1,6 @@
 cbuffer constant { uint2 resolution; }
 Texture2D<float3> input;
-RWTexture2D<float3> rate;
+RWTexture2D<uint> rate;
 
 float luma(uint2 uv) {
   float3 color = input[uv];
