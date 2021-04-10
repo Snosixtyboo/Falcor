@@ -13,17 +13,22 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 
 AdaptiveVRS::AdaptiveVRS()
 {
+    D3D12_FEATURE_DATA_D3D12_OPTIONS6 hardware;
+    gpDevice->getApiHandle()->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &hardware, sizeof(hardware));
+    tileSize = hardware.ShadingRateImageTileSize;
+
     Shader::DefineList defines;
     defines.add("VRS_1x1", std::to_string(D3D12_SHADING_RATE_1X1));
     defines.add("VRS_1x2", std::to_string(D3D12_SHADING_RATE_1X2));
     defines.add("VRS_2x1", std::to_string(D3D12_SHADING_RATE_2X1));
     defines.add("VRS_2x2", std::to_string(D3D12_SHADING_RATE_2X2));
+    defines.add("VRS_TILE", std::to_string(tileSize));
     defines.add("LIMIT", std::to_string(limit));
 
     shader = ComputePass::create("RenderPasses/AdaptiveVRS/AdaptiveVRS.slang", "main", defines);
 }
 
-RenderPassReflection AdaptiveVRS::reflect(const CompileData& compileData)
+RenderPassReflection AdaptiveVRS::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
     reflector.addInput("input", "Input").bindFlags(ResourceBindFlags::ShaderResource);
@@ -33,7 +38,7 @@ RenderPassReflection AdaptiveVRS::reflect(const CompileData& compileData)
 
 void AdaptiveVRS::compile(RenderContext* context, const CompileData& data)
 {
-    resolution = data.defaultTexDims / uint2(16, 16);
+    resolution = data.defaultTexDims / uint2(tileSize, tileSize);
     shader["constant"]["resolution"] = resolution;
 }
 

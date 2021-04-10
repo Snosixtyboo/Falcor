@@ -12,12 +12,12 @@ void main(uint3 tile : SV_DispatchThreadID)
 {
     if (any(tile.xy > resolution)) return;
 
-    uint2 uv = tile.xy * 16;
+    uint2 uv = tile.xy * VRS_TILE;
     float2 diff = (0.0, 0.0);
     float sum = 0;
 
-    for (uint u = 0; u<16; u+=2) {
-      for (uint v = 0; v<16; v+=2) {
+    for (uint u = 0; u<VRS_TILE; u+=2) {
+      for (uint v = 0; v<VRS_TILE; v+=2) {
         float a = luma(uv);
         float b = luma(uv + uint2(1,0));
         float c = luma(uv + uint2(0,1));
@@ -30,7 +30,7 @@ void main(uint3 tile : SV_DispatchThreadID)
       }
     }
 
-    float luminance = sum / (16.0 * 16.0 * 3.0) + 0.001;
+    float luminance = sum / (VRS_TILE * VRS_TILE * 3.0) + 0.001;
     float2 weber = diff / luminance;
 
     if (weber.x < LIMIT) {

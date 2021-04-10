@@ -7,7 +7,7 @@ class AdaptiveVRS : public RenderPass
 {
 private:
     ComputePass::SharedPtr shader;
-    uint2 resolution = { 0, 0 };
+    uint2 resolution; uint tileSize;
     float limit = 0.5;
     AdaptiveVRS();
 
