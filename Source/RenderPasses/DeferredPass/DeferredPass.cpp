@@ -85,7 +85,16 @@ void DeferredPass::execute(RenderContext* context, const RenderData& data)
 
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
         framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
+
         directX->RSSetShadingRateImage(data["vrs"]->getApiHandle());
+        D3D12_SHADING_RATE_COMBINER combiners[2] = {
+            D3D12_SHADING_RATE_COMBINER_PASSTHROUGH,
+            D3D12_SHADING_RATE_COMBINER_OVERRIDE
+        };
+
+        directX->RSSetShadingRate(D3D12_SHADING_RATE_1X1, combiners);
         pass->execute(context, framebuffers);
+        directX->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
+        directX->RSSetShadingRateImage(nullptr);
     }
 }

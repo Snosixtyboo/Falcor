@@ -22,6 +22,7 @@ AdaptiveVRS::AdaptiveVRS()
     defines.add("VRS_1x2", std::to_string(D3D12_SHADING_RATE_1X2));
     defines.add("VRS_2x1", std::to_string(D3D12_SHADING_RATE_2X1));
     defines.add("VRS_2x2", std::to_string(D3D12_SHADING_RATE_2X2));
+    defines.add("VRS_4x4", std::to_string(D3D12_SHADING_RATE_4X4));
     defines.add("VRS_TILE", std::to_string(tileSize));
     defines.add("LIMIT", std::to_string(limit));
 
@@ -32,7 +33,7 @@ RenderPassReflection AdaptiveVRS::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
     reflector.addInput("input", "Input").bindFlags(ResourceBindFlags::ShaderResource);
-    reflector.addOutput("rate", "Rate").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::R8Uint);
+    reflector.addOutput("rate", "Rate").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::R8Uint).texture2D(240, 135);
     return reflector;
 }
 
