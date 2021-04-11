@@ -8,7 +8,7 @@ class LieVRS : public RenderPass
 private:
     ComputePass::SharedPtr shader;
     uint2 resolution; uint tileSize;
-    float limit = 0.001f, luminance = 0.0f;
+    float limit = 0.25f, luminance = 0.0f;
     LieVRS();
 
 public:

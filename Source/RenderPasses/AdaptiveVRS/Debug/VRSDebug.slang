@@ -14,7 +14,9 @@ void main(uint3 pixel : SV_DispatchThreadID)
       color[uv] = rendering[uv];
     } else {
       float3 overlay;
-      if (mode == VRS_4x2 || mode == VRS_2x4)
+      if (mode == VRS_4x4)
+        overlay = float3(0.0, 0.0, 1.0);
+      else if (mode == VRS_4x2 || mode == VRS_2x4)
         overlay = float3(1.0, 0.0, 0.0);
       else if (mode == VRS_2x2)
         overlay = float3(1.0, 1.0, 0.0);

@@ -41,9 +41,9 @@ void LieVRS::execute(RenderContext* context, const RenderData& data)
 
 void LieVRS::renderUI(Gui::Widgets& widget)
 {
-    widget.slider("Perceptual Threshold", limit, 0.0f, 0.002f);
+    widget.slider("Perceptual Threshold", limit, 0.0f, 1.0f);
     shader->addDefine("LIMIT", std::to_string(limit));
 
-    widget.slider("Environment Luminance", luminance, 0.0f, 0.01f);
+    widget.slider("Environment Luminance", luminance, 0.0f, 1.0f);
     shader->addDefine("LUMINANCE", std::to_string(luminance));
 }

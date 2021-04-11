@@ -2,7 +2,7 @@ cbuffer constant { uint2 resolution; }
 Texture2D<float3> input;
 RWTexture2D<uint> rate;
 
-#define NUM_SAMPLES (float) (VRS_TILE * VRS_TILE)
+#define NUM_SAMPLES VRS_TILE * VRS_TILE
 float luma(uint2 uv) {
   float3 color = input[uv];
   return 0.299*color.r + 0.587*color.g + 0.114*color.b;
@@ -13,20 +13,21 @@ void main(uint3 tile : SV_DispatchThreadID)
 {
     if (any(tile.xy > resolution)) return;
 
-    uint2 uv = tile.xy * VRS_TILE;
+    uint2 start = tile.xy * VRS_TILE;
     float2 diff = (0.0, 0.0);
     float sum = 0;
 
     for (uint u = 0; u<VRS_TILE; u++) {
       for (uint v = 0; v<VRS_TILE; v++) {
-        float a = luma(uv);
-        float b = luma(uv + uint2(1,0));
+        uint2 uv = start + uint2(u,v);
         float c = luma(uv + uint2(0,1));
+        float b = luma(uv + uint2(1,0));
+        float a = luma(uv);
 
-        float x = abs(a - b);
-        float y = abs(a - c);
+        float dx = abs(a - b);
+        float dy = abs(a - c);
 
-        diff = max(diff, float2(x,y));
+        diff = max(diff, float2(dx,dy));
         sum += a + b + c;
       }
     }
