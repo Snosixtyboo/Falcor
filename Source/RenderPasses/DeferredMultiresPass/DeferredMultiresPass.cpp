@@ -99,7 +99,9 @@ void DeferredMultiresPass::execute(RenderContext* context, const RenderData& dat
         constants["world2View"] = scene->getCamera()->getViewMatrix();
         constants["lightCount"] = numLights;
 
+        ID3D12GraphicsCommandList5Ptr directX;
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
+
         for (const auto& rate : ShadingRates) {
             for (int i = 1; i <= 1; i++)
                 context->clearRtv(framebuffers->getRenderTargetView(i).get(), float4(0, 0, 0, 1));

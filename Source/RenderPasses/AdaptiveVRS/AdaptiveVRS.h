@@ -17,7 +17,7 @@ public:
     virtual std::string getDesc() override { return "Sets shading rate based on rendering result."; }
 
     virtual RenderPassReflection reflect(const CompileData& data) override;
+    virtual void compile(RenderContext* context, const CompileData& data) override {};
     virtual void execute(RenderContext* context, const RenderData& data) override;
-    virtual void compile(RenderContext* context, const CompileData& data) override;
     virtual void renderUI(Gui::Widgets& widget) override;
 };

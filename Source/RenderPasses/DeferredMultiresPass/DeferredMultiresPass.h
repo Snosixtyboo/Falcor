@@ -24,7 +24,6 @@ private:
     GraphicsVars::SharedPtr vars;
     Scene::SharedPtr scene;
     ParameterBlock::SharedPtr sceneBlock;
-    ID3D12GraphicsCommandList5Ptr directX;
 
     int numLights;
     Buffer::SharedPtr lightsBuffer;

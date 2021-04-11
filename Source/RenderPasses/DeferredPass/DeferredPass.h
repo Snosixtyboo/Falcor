@@ -1,6 +1,5 @@
 #pragma once
 #include "Falcor.h"
-#include "FalcorExperimental.h"
 #include "RenderGraph/RenderPassHelpers.h"
 
 using namespace Falcor;
@@ -25,7 +24,6 @@ private:
     GraphicsVars::SharedPtr vars;
     Scene::SharedPtr scene;
     ParameterBlock::SharedPtr sceneBlock;
-    ID3D12GraphicsCommandList5Ptr directX;
 
     int numLights;
     Buffer::SharedPtr lightsBuffer;

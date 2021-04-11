@@ -1,7 +1,15 @@
 #include "DeferredPass.h"
-#include <filesystem>
-#include <string>
-#include <cstdlib>
+
+// Don't remove this. it's required for hot-reload to function properly
+extern "C" __declspec(dllexport) const char* getProjDir()
+{
+    return PROJECT_DIR;
+}
+
+extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary & lib)
+{
+    lib.registerClass("DeferredPass", "Deferred rasterization.", DeferredPass::create);
+}
 
 const ChannelList GBuffers =
 {
@@ -13,16 +21,10 @@ const ChannelList GBuffers =
     { "emissive",       "gEmissive",        "emissive color",               true},
 };
 
-// Don't remove this. it's required for hot-reload to function properly
-extern "C" __declspec(dllexport) const char* getProjDir()
-{
-    return PROJECT_DIR;
-}
-
-extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
-{
-    lib.registerClass("DeferredPass", "Deferred rasterization.", DeferredPass::create);
-}
+const D3D12_SHADING_RATE_COMBINER Combiners[] = {
+    D3D12_SHADING_RATE_COMBINER_PASSTHROUGH,
+    D3D12_SHADING_RATE_COMBINER_OVERRIDE
+};
 
 DeferredPass::DeferredPass()
 {
@@ -83,17 +85,14 @@ void DeferredPass::execute(RenderContext* context, const RenderData& data)
         pass["constants"]["lightCount"] = numLights;
         pass["lights"] = lightsBuffer;
 
+        ID3D12GraphicsCommandList5Ptr directX;
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
-        framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
-
         directX->RSSetShadingRateImage(data["vrs"]->getApiHandle());
-        D3D12_SHADING_RATE_COMBINER combiners[2] = {
-            D3D12_SHADING_RATE_COMBINER_PASSTHROUGH,
-            D3D12_SHADING_RATE_COMBINER_OVERRIDE
-        };
+        directX->RSSetShadingRate(D3D12_SHADING_RATE_1X1, Combiners);
 
-        directX->RSSetShadingRate(D3D12_SHADING_RATE_1X1, combiners);
+        framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
         pass->execute(context, framebuffers);
+
         directX->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
         directX->RSSetShadingRateImage(nullptr);
     }
