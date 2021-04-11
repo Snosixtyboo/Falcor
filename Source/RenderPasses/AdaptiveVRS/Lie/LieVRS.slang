@@ -2,6 +2,7 @@ cbuffer constant { uint2 resolution; }
 Texture2D<float3> input;
 RWTexture2D<uint> rate;
 
+#define NUM_SAMPLES (float) (VRS_TILE * VRS_TILE)
 float luma(uint2 uv) {
   float3 color = input[uv];
   return 0.299*color.r + 0.587*color.g + 0.114*color.b;
@@ -12,12 +13,12 @@ void main(uint3 tile : SV_DispatchThreadID)
 {
     if (any(tile.xy > resolution)) return;
 
-    uint2 uv = tile.xy * 16;
+    uint2 uv = tile.xy * VRS_TILE;
     float2 diff = (0.0, 0.0);
     float sum = 0;
 
-    for (uint u = 0; u<16; u+=2) {
-      for (uint v = 0; v<16; v+=2) {
+    for (uint u = 0; u<VRS_TILE; u++) {
+      for (uint v = 0; v<VRS_TILE; v++) {
         float a = luma(uv);
         float b = luma(uv + uint2(1,0));
         float c = luma(uv + uint2(0,1));
@@ -30,32 +31,23 @@ void main(uint3 tile : SV_DispatchThreadID)
       }
     }
 
-    float luminance = sum / (16.0 * 16.0 * 3.0) + 0.001;
-    float2 weber = diff / luminance;
+    float average = sum / (NUM_SAMPLES * 3.0);
+    float limit = LIMIT * (average + LUMINANCE);
+    float limit2 = limit / 2.13;
 
-    if (weber.x < LIMIT) {
-      if (weber.y < LIMIT) {
+    if (diff.x < limit2 && diff.y < limit) {
+      rate[tile.xy] = VRS_4x2;
+    } else if (diff.x < limit) {
+      if (diff.y < limit2) {
+        rate[tile.xy] = VRS_2x4;
+      } else if (diff.y < limit) {
         rate[tile.xy] = VRS_2x2;
       } else {
         rate[tile.xy] = VRS_2x1;
       }
-    } else if (weber.y < LIMIT) {
+    } else if (diff.y < limit) {
       rate[tile.xy] = VRS_1x2;
     } else {
       rate[tile.xy] = VRS_1x1;
     }
-
-    /*
-    // tile color preview
-    if (rate[tile.xy].r == VRS_2x2)
-      rate[tile.xy] = float3(0.0, 1.0, 0.0);
-    else if (rate[tile.xy].r == VRS_1x1)
-      rate[tile.xy] = float3(1.0, 0.0, 0.0);
-    else if (rate[tile.xy].r == VRS_1x2)
-      rate[tile.xy] = float3(0.0, 0.0, 1.0);
-    else
-      rate[tile.xy] = float3(1.0, 1.0, 0.0);*/
-
-    // metric value
-    //rate[tile.xy] = float3(weber, 0.0);
 }

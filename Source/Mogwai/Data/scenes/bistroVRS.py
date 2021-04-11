@@ -2,8 +2,8 @@ from falcor import *
 import os
 
 # Scene
-m.loadScene(os.getenv('FALCOR_DATA').strip("/") + '/Bistro_v5_1/BistroInterior.fbx')
-#m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/Bistro/BistroInterior.fbx')
+#m.loadScene(os.getenv('FALCOR_DATA').strip("/") + '/Bistro_v5_1/BistroInterior.fbx')
+m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/Bistro/BistroInterior.fbx')
 m.scene.renderSettings = SceneRenderSettings(useEnvLight=True, useAnalyticLights=True, useEmissiveLights=True)
 m.scene.camera.nearPlane = 0.10000000149011612
 m.scene.camera.farPlane = 100.0
@@ -32,16 +32,17 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('Reproject.dll')
 
     g = RenderGraph('AdaptiveVRSGraph')
-    g.addPass(createPass('AdaptiveVRS'), 'AdaptiveVRS')
     g.addPass(createPass('BlitPass'), 'CSMBlit')
-    g.addPass(createPass('CSM'), 'CSM')
-    g.addPass(createPass('FXAA'), 'FXAA')
     g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'Raster')
     g.addPass(createPass('ToneMapper', {'autoExposure': True}), 'ToneMapper')
     g.addPass(createPass('DeferredPass'), 'Shading')
     g.addPass(createPass('Reproject'), 'Reproject')
+    g.addPass(createPass('VRSDebug'), 'VRSDebug')
+    g.addPass(createPass('LieVRS'), 'LieVRS')
     g.addPass(createPass('SkyBox'), 'SkyBox')
+    g.addPass(createPass('FXAA'), 'FXAA')
     g.addPass(createPass('SSAO'), 'SSAO')
+    g.addPass(createPass('CSM'), 'CSM')
 
     # Raster
     g.addEdge('Raster.depth', 'CSM.depth')
@@ -59,9 +60,8 @@ def render_graph_DefaultRenderGraph():
     # Features
     g.addEdge('CSM.visibility', 'Shading.visibility')
     g.addEdge('CSM.visibility', 'CSMBlit.src')
-
-    g.addEdge('Reproject.output', 'AdaptiveVRS.input')
-    g.addEdge('AdaptiveVRS.rate', 'Shading.vrs')
+    g.addEdge('Reproject.output', 'LieVRS.input')
+    g.addEdge('LieVRS.rate', 'Shading.vrs')
 
     # Post-Processing
     g.addEdge('SkyBox.target', 'Shading.output')
@@ -70,6 +70,11 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('SSAO.colorOut', 'FXAA.src')
     g.addEdge('Reproject.buffer', 'FXAA.dst')
     g.markOutput('FXAA.dst')
+
+    # Debug
+    g.addEdge('LieVRS.rate', 'VRSDebug.rate')
+    g.addEdge('FXAA.dst', 'VRSDebug.rendering')
+    g.markOutput('VRSDebug.color')
     return g
 
 m.addGraph(render_graph_DefaultRenderGraph())

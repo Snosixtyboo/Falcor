@@ -3,18 +3,18 @@
 
 using namespace Falcor;
 
-class AdaptiveVRS : public RenderPass
+class LieVRS : public RenderPass
 {
 private:
     ComputePass::SharedPtr shader;
     uint2 resolution; uint tileSize;
-    float limit = 0.5;
-    AdaptiveVRS();
+    float limit = 0.001f, luminance = 0.0f;
+    LieVRS();
 
 public:
-    using SharedPtr = std::shared_ptr<AdaptiveVRS>;
-    static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {}) {return SharedPtr(new AdaptiveVRS);};
-    virtual std::string getDesc() override { return "Sets shading rate based on rendering result."; }
+    using SharedPtr = std::shared_ptr<LieVRS>;
+    static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {}) {return SharedPtr(new LieVRS);};
+    virtual std::string getDesc() override { return "Basic Lie 2019 content adaptive shading"; }
 
     virtual RenderPassReflection reflect(const CompileData& data) override;
     virtual void compile(RenderContext* context, const CompileData& data) override {};

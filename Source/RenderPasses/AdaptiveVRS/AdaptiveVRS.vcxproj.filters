@@ -1,12 +1,36 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="Lie">
+      <UniqueIdentifier>{56b4427e-2443-4626-a49a-ecd06ca13563}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Debug">
+      <UniqueIdentifier>{8d11aaa5-4db6-4be6-8209-524bdb2834f0}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
     <ClCompile Include="AdaptiveVRS.cpp" />
+    <ClCompile Include="Lie\LieVRS.cpp">
+      <Filter>Lie</Filter>
+    </ClCompile>
+    <ClCompile Include="Debug\VRSDebug.cpp">
+      <Filter>Debug</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AdaptiveVRS.h" />
+    <ClInclude Include="Lie\LieVRS.h">
+      <Filter>Lie</Filter>
+    </ClInclude>
+    <ClInclude Include="Debug\VRSDebug.h">
+      <Filter>Debug</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ShaderSource Include="AdaptiveVRS.slang" />
+    <ShaderSource Include="Lie\LieVRS.slang">
+      <Filter>Lie</Filter>
+    </ShaderSource>
+    <ShaderSource Include="Debug\VRSDebug.slang">
+      <Filter>Debug</Filter>
+    </ShaderSource>
   </ItemGroup>
 </Project>

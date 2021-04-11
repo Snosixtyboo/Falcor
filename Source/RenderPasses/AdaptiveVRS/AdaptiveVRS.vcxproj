@@ -38,12 +38,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AdaptiveVRS.cpp" />
+    <ClCompile Include="Debug\VRSDebug.cpp" />
+    <ClCompile Include="Lie\LieVRS.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AdaptiveVRS.h" />
+    <ClInclude Include="Debug\VRSDebug.h" />
+    <ClInclude Include="Lie\LieVRS.h" />
   </ItemGroup>
   <ItemGroup>
-    <ShaderSource Include="AdaptiveVRS.slang" />
+    <ShaderSource Include="Debug\VRSDebug.slang" />
+    <ShaderSource Include="Lie\LieVRS.slang" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
