@@ -7,7 +7,7 @@ class Reproject : public RenderPass
 {
 private:
     FullScreenPass::SharedPtr shader;
-    Fbo::SharedPtr framebuffers;
+    Fbo::SharedPtr framebuffer;
     Reproject();
 
 public:

@@ -28,7 +28,7 @@ const D3D12_SHADING_RATE_COMBINER Combiners[] = {
 
 DeferredPass::DeferredPass()
 {
-    framebuffers = Fbo::create();
+    framebuffer = Fbo::create();
     pass = FullScreenPass::create("RenderPasses/DeferredPass/DeferredPass.slang");
     pass["gSampler"] = Sampler::create(Sampler::Desc().setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point));
     sceneBlock = ParameterBlock::create(pass->getProgram()->getReflector()->getParameterBlock("tScene"));
@@ -90,8 +90,8 @@ void DeferredPass::execute(RenderContext* context, const RenderData& data)
         directX->RSSetShadingRateImage(data["vrs"]->getApiHandle());
         directX->RSSetShadingRate(D3D12_SHADING_RATE_1X1, Combiners);
 
-        framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
-        pass->execute(context, framebuffers);
+        framebuffer->attachColorTarget(data["output"]->asTexture(), 0);
+        pass->execute(context, framebuffer);
 
         directX->RSSetShadingRate(D3D12_SHADING_RATE_1X1, nullptr);
         directX->RSSetShadingRateImage(nullptr);

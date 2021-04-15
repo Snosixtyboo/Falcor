@@ -20,7 +20,7 @@ public:
 
 private:
     FullScreenPass::SharedPtr pass;
-    Fbo::SharedPtr framebuffers;
+    Fbo::SharedPtr framebuffer;
     GraphicsVars::SharedPtr vars;
     Scene::SharedPtr scene;
     ParameterBlock::SharedPtr sceneBlock;

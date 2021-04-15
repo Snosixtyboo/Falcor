@@ -14,13 +14,14 @@ public:
     virtual std::string getDesc() override { return "Deferred rasterization at given shading rate."; }
 
     virtual RenderPassReflection reflect(const CompileData& data) override;
-    virtual void compile(RenderContext* context, const CompileData& data) override {}
+    virtual void compile(RenderContext* context, const CompileData& data) override {};
     virtual void execute(RenderContext* context, const RenderData& data) override;
     virtual void setScene(RenderContext* context, const Scene::SharedPtr& scene) override;
+    virtual void renderUI(Gui::Widgets& widget) override;
 
 private:
     FullScreenPass::SharedPtr pass;
-    Fbo::SharedPtr framebuffers;
+    Fbo::SharedPtr framebuffer;
     GraphicsVars::SharedPtr vars;
     Scene::SharedPtr scene;
     ParameterBlock::SharedPtr sceneBlock;

@@ -13,7 +13,7 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 
 Reproject::Reproject()
 {
-    framebuffers = Fbo::create();
+    framebuffer = Fbo::create();
     shader = FullScreenPass::create("RenderPasses/Reproject/Reproject.slang");
     shader["sampler"] = Sampler::create(Sampler::Desc().setAddressingMode(Sampler::AddressMode::Border, Sampler::AddressMode::Border, Sampler::AddressMode::Border));
 }
@@ -29,8 +29,8 @@ RenderPassReflection Reproject::reflect(const CompileData& data)
 
 void Reproject::execute(RenderContext* context, const RenderData& data)
 {
-    framebuffers->attachColorTarget(data["output"]->asTexture(), 0);
+    framebuffer->attachColorTarget(data["output"]->asTexture(), 0);
     shader["buffer"] = data["buffer"]->asTexture();
     shader["motion"] = data["motion"]->asTexture();
-    shader->execute(context, framebuffers);
+    shader->execute(context, framebuffer);
 }

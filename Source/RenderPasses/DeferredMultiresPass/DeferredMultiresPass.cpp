@@ -34,7 +34,7 @@ const DeferredMultiresPass::ShadingRate ShadingRates[7] =
 
 DeferredMultiresPass::DeferredMultiresPass()
 {
-    framebuffers = Fbo::create();
+    framebuffer = Fbo::create();
     pass = FullScreenPass::create("RenderPasses/DeferredMultiresPass/DeferredMultiresPass.slang");
     pass["gSampler"] = Sampler::create(Sampler::Desc().setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point));
     sceneBlock = ParameterBlock::create(pass->getProgram()->getReflector()->getParameterBlock("tScene"));
@@ -84,7 +84,7 @@ RenderPassReflection DeferredMultiresPass::reflect(const CompileData& data)
 void DeferredMultiresPass::execute(RenderContext* context, const RenderData& data)
 {
     if (scene) {
-        framebuffers->attachColorTarget(data["viewNormalsOut"]->asTexture(), 1);
+        framebuffer->attachColorTarget(data["viewNormalsOut"]->asTexture(), 1);
 
         pass["gPosW"] = data["posW"]->asTexture();
         pass["gNormW"] = data["normW"]->asTexture();;
@@ -101,14 +101,15 @@ void DeferredMultiresPass::execute(RenderContext* context, const RenderData& dat
 
         ID3D12GraphicsCommandList5Ptr directX;
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
+        //        //framebuffer->setSamplePositions(4, 1, framebuffer->getSamplePositions().data());
 
         for (const auto& rate : ShadingRates) {
             for (int i = 1; i <= 1; i++)
-                context->clearRtv(framebuffers->getRenderTargetView(i).get(), float4(0, 0, 0, 1));
+                context->clearRtv(framebuffer->getRenderTargetView(i).get(), float4(0, 0, 0, 1));
 
             directX->RSSetShadingRate(rate.id, nullptr);
-            framebuffers->attachColorTarget(data[rate.name]->asTexture(), 0);
-            pass->execute(context, framebuffers);
+            framebuffer->attachColorTarget(data[rate.name]->asTexture(), 0);
+            pass->execute(context, framebuffer);
         }
     }
 }
