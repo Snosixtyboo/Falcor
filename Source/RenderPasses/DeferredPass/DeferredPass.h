@@ -17,7 +17,6 @@ public:
     virtual void compile(RenderContext* context, const CompileData& data) override {};
     virtual void execute(RenderContext* context, const RenderData& data) override;
     virtual void setScene(RenderContext* context, const Scene::SharedPtr& scene) override;
-    virtual void renderUI(Gui::Widgets& widget) override;
 
 private:
     FullScreenPass::SharedPtr pass;
