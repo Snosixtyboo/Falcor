@@ -1,6 +1,6 @@
-#include "LieVRS.h"
+#include "YangVRS.h"
 
-LieVRS::LieVRS()
+YangVRS::YangVRS()
 {
     D3D12_FEATURE_DATA_D3D12_OPTIONS6 hardware;
     gpDevice->getApiHandle()->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS6, &hardware, sizeof(hardware));
@@ -17,10 +17,10 @@ LieVRS::LieVRS()
     defines.add("LUMINANCE", std::to_string(luminance));
     defines.add("LIMIT", std::to_string(limit));
 
-    shader = ComputePass::create("RenderPasses/AdaptiveVRS/Lie/LieVRS.slang", "main", defines);
+    shader = ComputePass::create("RenderPasses/AdaptiveVRS/Lie/YangVRS.slang", "main", defines);
 }
 
-RenderPassReflection LieVRS::reflect(const CompileData& data)
+RenderPassReflection YangVRS::reflect(const CompileData& data)
 {
     auto fbo = gpFramework->getTargetFbo();
     resolution = uint2(fbo->getWidth(), fbo->getHeight()) / uint2(tileSize, tileSize);
@@ -32,16 +32,16 @@ RenderPassReflection LieVRS::reflect(const CompileData& data)
     return reflector;
 }
 
-void LieVRS::execute(RenderContext* context, const RenderData& data)
+void YangVRS::execute(RenderContext* context, const RenderData& data)
 {
     shader["rate"] = data["rate"]->asTexture();
     shader["input"] = data["input"]->asTexture();
     shader->execute(context, resolution.x, resolution.y);
 }
 
-void LieVRS::renderUI(Gui::Widgets& widget)
+void YangVRS::renderUI(Gui::Widgets& widget)
 {
-    widget.slider("Perceptual Threshold", limit, 0.0f, 1.0f);
+    widget.slider("Max Perceptual Error", limit, 0.0f, 1.0f);
     shader->addDefine("LIMIT", std::to_string(limit));
 
     widget.slider("Environment Luminance", luminance, 0.0f, 1.0f);

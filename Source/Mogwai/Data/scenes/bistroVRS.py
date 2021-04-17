@@ -38,7 +38,7 @@ def render_graph_DefaultRenderGraph():
     g.addPass(createPass('DeferredPass'), 'Shading')
     g.addPass(createPass('Reproject'), 'Reproject')
     g.addPass(createPass('VRSDebug'), 'VRSDebug')
-    g.addPass(createPass('LieVRS'), 'LieVRS')
+    g.addPass(createPass('YangVRS'), 'YangVRS')
     g.addPass(createPass('SkyBox'), 'SkyBox')
     g.addPass(createPass('FXAA'), 'FXAA')
     g.addPass(createPass('SSAO'), 'SSAO')
@@ -60,8 +60,8 @@ def render_graph_DefaultRenderGraph():
     # Features
     g.addEdge('CSM.visibility', 'Shading.visibility')
     g.addEdge('CSM.visibility', 'CSMBlit.src')
-    g.addEdge('Reproject.output', 'LieVRS.input')
-    g.addEdge('LieVRS.rate', 'Shading.vrs')
+    g.addEdge('Reproject.output', 'YangVRS.input')
+    g.addEdge('YangVRS.rate', 'Shading.vrs')
 
     # Post-Processing
     g.addEdge('SkyBox.target', 'Shading.output')
@@ -72,7 +72,7 @@ def render_graph_DefaultRenderGraph():
     g.markOutput('FXAA.dst')
 
     # Debug
-    g.addEdge('LieVRS.rate', 'VRSDebug.rate')
+    g.addEdge('YangVRS.rate', 'VRSDebug.rate')
     g.addEdge('FXAA.dst', 'VRSDebug.rendering')
     g.markOutput('VRSDebug.color')
     return g
