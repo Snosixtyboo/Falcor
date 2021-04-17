@@ -7,6 +7,9 @@
     <Filter Include="Yang">
       <UniqueIdentifier>{56b4427e-2443-4626-a49a-ecd06ca13563}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Jaliborc">
+      <UniqueIdentifier>{337d0544-acc8-4bb5-af01-647567cf43a1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="AdaptiveVRS.cpp" />
@@ -16,6 +19,9 @@
     <ClCompile Include="Yang\YangVRS.cpp">
       <Filter>Yang</Filter>
     </ClCompile>
+    <ClCompile Include="Jaliborc\JaliVRS.cpp">
+      <Filter>Jaliborc</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Debug\VRSDebug.h">
@@ -23,6 +29,9 @@
     </ClInclude>
     <ClInclude Include="Yang\YangVRS.h">
       <Filter>Yang</Filter>
+    </ClInclude>
+    <ClInclude Include="Jaliborc\JaliVRS.h">
+      <Filter>Jaliborc</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -39,10 +39,12 @@
   <ItemGroup>
     <ClCompile Include="AdaptiveVRS.cpp" />
     <ClCompile Include="Debug\VRSDebug.cpp" />
+    <ClCompile Include="Jaliborc\JaliVRS.cpp" />
     <ClCompile Include="Yang\YangVRS.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Debug\VRSDebug.h" />
+    <ClInclude Include="Jaliborc\JaliVRS.h" />
     <ClInclude Include="Yang\YangVRS.h" />
   </ItemGroup>
   <ItemGroup>
@@ -128,12 +130,14 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(FALCOR_CORE_DIRECTORY)\Externals\tensorRT\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(FALCOR_CORE_DIRECTORY)\Externals\tensorRT\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
