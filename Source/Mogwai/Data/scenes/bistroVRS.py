@@ -39,6 +39,7 @@ def render_graph_DefaultRenderGraph():
     g.addPass(createPass('Reproject'), 'Reproject')
     g.addPass(createPass('VRSDebug'), 'VRSDebug')
     g.addPass(createPass('YangVRS'), 'YangVRS')
+    g.addPass(createPass('JaliVRS'), 'JaliVRS')
     g.addPass(createPass('SkyBox'), 'SkyBox')
     g.addPass(createPass('FXAA'), 'FXAA')
     g.addPass(createPass('SSAO'), 'SSAO')
@@ -61,6 +62,7 @@ def render_graph_DefaultRenderGraph():
     g.addEdge('CSM.visibility', 'Shading.visibility')
     g.addEdge('CSM.visibility', 'CSMBlit.src')
     g.addEdge('Reproject.output', 'YangVRS.input')
+    g.addEdge('Reproject.output', 'JaliVRS.fake')
     g.addEdge('YangVRS.rate', 'Shading.vrs')
 
     # Post-Processing

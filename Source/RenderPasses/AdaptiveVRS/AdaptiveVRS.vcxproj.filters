@@ -42,4 +42,9 @@
       <Filter>Yang</Filter>
     </ShaderSource>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Jaliborc\JaliVRS.onnx">
+      <Filter>Jaliborc</Filter>
+    </None>
+  </ItemGroup>
 </Project>

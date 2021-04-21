@@ -1,13 +1,13 @@
 #pragma once
 #include "Falcor.h"
+#include "NvInfer.h"
 
 using namespace Falcor;
 
 class JaliVRS : public RenderPass
 {
 private:
-    ComputePass::SharedPtr shader;
-    uint2 resolution; uint tileSize;
+    nvinfer1::IExecutionContext* model;
     float limit = 0.25f;
     JaliVRS();
 

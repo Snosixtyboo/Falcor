@@ -51,6 +51,9 @@
     <ShaderSource Include="Debug\VRSDebug.slang" />
     <ShaderSource Include="Yang\YangVRS.slang" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="Jaliborc\JaliVRS.onnx" />
+  </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
@@ -137,7 +140,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(FALCOR_CORE_DIRECTORY)\Externals\tensorRT\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(FALCOR_CORE_DIRECTORY)\Externals\tensorRT\lib;$(FALCOR_CORE_DIRECTORY)\Externals\cudnn\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>nvinfer.lib;nvonnxparser.lib;nvparsers.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
