@@ -11,22 +11,38 @@ public:
     }
 } RTLogger;
 
+struct RTPointer
+{
+    template< class T >
+    void operator()(T* obj) const
+    {
+        if (obj)
+            obj->destroy();
+    }
+};
+
+template<class T>
+using RT = std::unique_ptr<T, RTPointer>;
 
 JaliVRS::JaliVRS()
 {
-    auto builder = nvinfer1::createInferBuilder(RTLogger);
+    RT<nvinfer1::IBuilder> builder {nvinfer1::createInferBuilder(RTLogger)};
     builder->setMaxBatchSize(1);
 
-    auto config = builder->createBuilderConfig();
+    RT<nvinfer1::IBuilderConfig> config {builder->createBuilderConfig()};
     config->setFlag(nvinfer1::BuilderFlag::kFP16);
     config->setMaxWorkspaceSize(1ULL << 30);
 
-    auto network = builder->createNetwork();
-    auto parser = nvonnxparser::createParser(*network, RTLogger);
-    if (!parser->parseFromFile("RenderPasses/AdaptiveVRS/Jaliborc/JaliVRS.2onnx", (int)nvinfer1::ILogger::Severity::kINFO))
+    RT<nvinfer1::INetworkDefinition> network {builder->createNetwork()};
+    RT<nvonnxparser::IParser> parser {nvonnxparser::createParser(*network, RTLogger)};
+
+    if (!parser->parseFromFile("RenderPasses/AdaptiveVRS/Jaliborc/JaliVRS.onnx", (int)nvinfer1::ILogger::Severity::kINFO))
         std::cerr << "ERROR: could not parse the model.\n";
 
-    model = builder->buildEngineWithConfig(*network, *config)->createExecutionContext();
+    RT<nvinfer1::ICudaEngine> engine {builder->buildEngineWithConfig(*network, *config)};
+    RT<nvinfer1::IExecutionContext> model {engine->createExecutionContext()};
+
+    std::cout << model->getName();
 }
 
 RenderPassReflection JaliVRS::reflect(const CompileData& data)

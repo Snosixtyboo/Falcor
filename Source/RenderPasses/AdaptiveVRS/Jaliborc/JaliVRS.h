@@ -7,7 +7,6 @@ using namespace Falcor;
 class JaliVRS : public RenderPass
 {
 private:
-    nvinfer1::IExecutionContext* model;
     float limit = 0.25f;
     JaliVRS();
 

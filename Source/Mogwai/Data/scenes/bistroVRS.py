@@ -2,7 +2,7 @@ from falcor import *
 import os
 
 # Scene
-#m.loadScene(os.getenv('FALCOR_DATA').strip("/") + '/Bistro_v5_1/BistroInterior.fbx')
+#m.loadScene(os.getenv('FALCOR_MEDIA_FOLDERS').strip("/") + '/Bistro_v5_1/BistroInterior.fbx')
 m.loadScene('C:/Users/jaliborc/Documents/Coding/vrs/data/scenes/Bistro/BistroInterior.fbx')
 m.scene.renderSettings = SceneRenderSettings(useEnvLight=True, useAnalyticLights=True, useEmissiveLights=True)
 m.scene.camera.nearPlane = 0.10000000149011612
