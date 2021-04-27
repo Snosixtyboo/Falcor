@@ -3,18 +3,19 @@
 
 using namespace Falcor;
 
-class Reproject : public RenderPass
+class TemporalReproject : public RenderPass
 {
 private:
     FullScreenPass::SharedPtr shader;
     Fbo::SharedPtr framebuffer;
-    Reproject();
+    TemporalReproject();
 
 public:
-    using SharedPtr = std::shared_ptr<Reproject>;
-    static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {}) {return SharedPtr(new Reproject);};
-    virtual std::string getDesc() override { return "Reprojects previous render using screen-space motion."; }
-
+    using SharedPtr = std::shared_ptr<TemporalReproject>;
+    static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {}) {return SharedPtr(new TemporalReproject);}
+    virtual std::string getDesc() override { return desc; }
+    static const char* desc;
+ 
     virtual RenderPassReflection reflect(const CompileData& data) override;
     virtual void execute(RenderContext* context, const RenderData& data) override;
     virtual void compile(RenderContext* context, const CompileData& data) override {}

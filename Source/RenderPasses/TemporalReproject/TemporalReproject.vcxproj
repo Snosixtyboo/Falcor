@@ -19,7 +19,7 @@
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ExampleBlitPass</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
-    <ProjectName>Reproject</ProjectName>
+    <ProjectName>TemporalReproject</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -37,13 +37,13 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Reproject.h" />
+    <ClInclude Include="TemporalReproject.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Reproject.cpp" />
+    <ClCompile Include="TemporalReproject.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ShaderSource Include="Reproject.slang" />
+    <None Include="TemporalReproject.slang" />
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>

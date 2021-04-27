@@ -1,4 +1,4 @@
-Texture2D buffer, motion;
+Texture2D source, motion;
 SamplerState sampler;
 
 struct Out {
@@ -7,6 +7,6 @@ struct Out {
 
 Out main(float2 uv : TEXCOORD) : SV_TARGET {
   Out out;
-  out.reprojected = buffer.SampleLevel(sampler, uv + motion[uv].xy, 0);
+  out.reprojected = source.SampleLevel(sampler, uv + motion[uv].xy, 0);
   return out;
 }
