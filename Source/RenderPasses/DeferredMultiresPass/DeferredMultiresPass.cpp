@@ -101,7 +101,6 @@ void DeferredMultiresPass::execute(RenderContext* context, const RenderData& dat
 
         ID3D12GraphicsCommandList5Ptr directX;
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
-        //        //framebuffer->setSamplePositions(4, 1, framebuffer->getSamplePositions().data());
 
         for (const auto& rate : ShadingRates) {
             for (int i = 1; i <= 1; i++)

@@ -3,7 +3,7 @@
 const char* TemporalReproject::desc = "Temporal reprojection of previous render using screen-space motion.";
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary& lib)
 {
-    lib.registerClass("TemporalReproject", TemporalReproject::desc, TemporalReproject::create);
+    lib.registerClass("TemporalReproject", "Temporal reprojection of previous render using screen-space motion.", TemporalReproject::create);
 }
 
 extern "C" __declspec(dllexport) const char* getProjDir()
@@ -29,7 +29,7 @@ RenderPassReflection TemporalReproject::reflect(const CompileData& data)
 
 void TemporalReproject::execute(RenderContext* context, const RenderData& data)
 {
-    framebuffer->attachColorTarget(data["output"]->asTexture(), 0);
+    framebuffer->attachColorTarget(data["dst"]->asTexture(), 0);
     shader["motion"] = data["motion"]->asTexture();
     shader["source"] = data["target"]->asTexture();
     shader->execute(context, framebuffer);
