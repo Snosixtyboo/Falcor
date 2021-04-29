@@ -3,29 +3,39 @@
 
 JaliVRS::JaliVRS()
 {
-    RT<IBuilder> builder {nvinfer1::createInferBuilder(Logger)};
-    builder->setMaxBatchSize(1);
-    builder->setFp16Mode(true);
-
-    RT<INetworkDefinition> network {builder->createNetwork()};
-    RT<nvonnxparser::IParser> parser {nvonnxparser::createParser(*network, Logger)};
-
-    auto file = fopen("mnist-1.onnx", "r");
+    ////////// debug sanity check for now
+    auto onnxPath = "JaliVRS.onnx";
+    auto file = fopen(onnxPath, "r");
     if (file == NULL)
-        throw std::runtime_error("Could not open onnx file");
+        throw std::runtime_error("Could not open ONNX file");
     else
         fclose(file);
+    //////////
 
-    if (!parser->parseFromFile("mnist-1.onnx", (int)Logger::Severity::kVERBOSE))
-        throw std::runtime_error("Could not parse onnx model");
+    RT<IBuilder> builder {createInferBuilder(Logger)};
+    RT<IBuilderConfig> config {builder->createBuilderConfig()};
+    RT<INetworkDefinition> network {builder->createNetworkV2(1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH))};
 
-    std::cout << network->getNbLayers();
+    RT<nvonnxparser::IParser> parser {nvonnxparser::createParser(*network, Logger)};
+    if (!parser->parseFromFile(onnxPath, static_cast<int>(ILogger::Severity::kINFO)))
+        throw std::runtime_error("Could not parse ONNX network");
 
-    engine = RT<ICudaEngine>(builder->buildCudaEngine(*network));
+    config->setMaxWorkspaceSize((1 << 30));
+    builder->setMaxBatchSize(1);
+
+   /* auto profile = builder->createOptimizationProfile();
+    profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMIN, Dims4{ 1, 3, 256 , 256 });
+    profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kOPT, Dims4{ 1, 3, 256 , 256 });
+    profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMAX, Dims4{ 32, 3, 256 , 256 });
+    config->addOptimizationProfile(profile);*/
+
+    engine.reset(builder->buildEngineWithConfig(*network, *config));
     if (!engine.get())
-        throw std::runtime_error("Error creating engine");
+        throw std::runtime_error("Error creating TensorRT engine");
 
-    RT<IExecutionContext> context {engine->createExecutionContext()};
+    context.reset(engine->createExecutionContext());
+    if (!context.get())
+        throw std::runtime_error("Error creating TensorRT context");
 }
 
 RenderPassReflection JaliVRS::reflect(const CompileData& data)
