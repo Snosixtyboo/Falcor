@@ -1,48 +1,31 @@
 #include "JaliVRS.h"
 #include "NvOnnxParser.h"
 
-class RTLogger : public nvinfer1::ILogger
-{
-public:
-    void log(Severity severity, const char* msg) override
-    {
-        if ((severity == Severity::kERROR) || (severity == Severity::kINTERNAL_ERROR))
-                std::cerr << msg << "\n";
-    }
-} RTLogger;
-
-struct RTPointer
-{
-    template< class T >
-    void operator()(T* obj) const
-    {
-        if (obj)
-            obj->destroy();
-    }
-};
-
-template<class T>
-using RT = std::unique_ptr<T, RTPointer>;
-
 JaliVRS::JaliVRS()
 {
-    RT<nvinfer1::IBuilder> builder {nvinfer1::createInferBuilder(RTLogger)};
+    RT<IBuilder> builder {nvinfer1::createInferBuilder(Logger)};
     builder->setMaxBatchSize(1);
+    builder->setFp16Mode(true);
 
-    RT<nvinfer1::IBuilderConfig> config {builder->createBuilderConfig()};
-    config->setFlag(nvinfer1::BuilderFlag::kFP16);
-    config->setMaxWorkspaceSize(1ULL << 30);
+    RT<INetworkDefinition> network {builder->createNetwork()};
+    RT<nvonnxparser::IParser> parser {nvonnxparser::createParser(*network, Logger)};
 
-    RT<nvinfer1::INetworkDefinition> network {builder->createNetwork()};
-    RT<nvonnxparser::IParser> parser {nvonnxparser::createParser(*network, RTLogger)};
+    auto file = fopen("mnist-1.onnx", "r");
+    if (file == NULL)
+        throw std::runtime_error("Could not open onnx file");
+    else
+        fclose(file);
 
-    if (!parser->parseFromFile("RenderPasses/AdaptiveVRS/Jaliborc/JaliVRS.onnx", (int)nvinfer1::ILogger::Severity::kINFO))
-        std::cerr << "ERROR: could not parse the model.\n";
+    if (!parser->parseFromFile("mnist-1.onnx", (int)Logger::Severity::kVERBOSE))
+        throw std::runtime_error("Could not parse onnx model");
 
-    RT<nvinfer1::ICudaEngine> engine {builder->buildEngineWithConfig(*network, *config)};
-    RT<nvinfer1::IExecutionContext> model {engine->createExecutionContext()};
+    std::cout << network->getNbLayers();
 
-    std::cout << model->getName();
+    engine = RT<ICudaEngine>(builder->buildCudaEngine(*network));
+    if (!engine.get())
+        throw std::runtime_error("Error creating engine");
+
+    RT<IExecutionContext> context {engine->createExecutionContext()};
 }
 
 RenderPassReflection JaliVRS::reflect(const CompileData& data)
