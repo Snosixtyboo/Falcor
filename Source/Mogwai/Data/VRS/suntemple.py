@@ -2,8 +2,10 @@ from Data.VRS.graphs import *
 import os
 
 # Scene
-m.loadScene(os.getenv('FALCOR_MEDIA_FOLDERS').strip('/') + '/SunTemple/SunTemple.fscene')
+p = os.getenv('FALCOR_MEDIA_FOLDERS').strip('/')
+m.loadScene(p + '/SunTemple/SunTemple.fscene')
 m.scene.renderSettings = SceneRenderSettings(useEnvLight=True, useAnalyticLights=True, useEmissiveLights=True)
+m.scene.setEnvMap(p + '/SunTemple/SunTemple_Skybox.hdr')
 m.scene.camera.position = float3(0.017157,3.184416,71.125000)
 m.scene.camera.target = float3(-0.021863,3.224318,70.126556)
 m.scene.camera.up = float3(-0.000038,1.000000,-0.000924)
