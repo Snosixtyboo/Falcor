@@ -79,7 +79,7 @@ RenderPassReflection FXAA::reflect(const CompileData& compileData)
 {
     RenderPassReflection reflector;
     reflector.addInput(kSrc, "Source color-buffer");
-    reflector.addOutput(kDst, "Destination color-buffer");
+    reflector.addInputOutput(kDst, "Destination color-buffer");
     return reflector;
 }
 
