@@ -1,16 +1,30 @@
+#include <cuda_runtime_api.h>
 #include "JaliVRS.h"
 #include "NvOnnxParser.h"
 
+int size(DataType t)
+{
+    switch (t) {
+        case DataType::kINT32:
+        case DataType::kFLOAT: return 4;
+        case DataType::kHALF:  return 2;
+        case DataType::kINT8:  return 1;
+    }
+    return 0;
+}
+
+int length(Dims shape)
+{
+    int length = 1;
+    for (int i = 0; i < shape.nbDims; i++)
+        length *= shape.d[i];
+
+    return length;
+}
+
 JaliVRS::JaliVRS()
 {
-    ////////// debug sanity check for now
     auto onnxPath = "JaliVRS.onnx";
-    auto file = fopen(onnxPath, "r");
-    if (file == NULL)
-        throw std::runtime_error("Could not open ONNX file");
-    else
-        fclose(file);
-    //////////
 
     RT<IBuilder> builder {createInferBuilder(Logger)};
     RT<IBuilderConfig> config {builder->createBuilderConfig()};
@@ -18,20 +32,25 @@ JaliVRS::JaliVRS()
 
     RT<nvonnxparser::IParser> parser {nvonnxparser::createParser(*network, Logger)};
     if (!parser->parseFromFile(onnxPath, static_cast<int>(ILogger::Severity::kINFO)))
-        throw std::runtime_error("Could not parse ONNX network");
+        throw std::runtime_error("Could not parse ONNX file");
 
     config->setMaxWorkspaceSize((1 << 30));
     builder->setMaxBatchSize(1);
 
-   /* auto profile = builder->createOptimizationProfile();
-    profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMIN, Dims4{ 1, 3, 256 , 256 });
-    profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kOPT, Dims4{ 1, 3, 256 , 256 });
-    profile->setDimensions(network->getInput(0)->getName(), OptProfileSelector::kMAX, Dims4{ 32, 3, 256 , 256 });
-    config->addOptimizationProfile(profile);*/
-
-    engine.reset(builder->buildEngineWithConfig(*network, *config));
+    RT<ICudaEngine> engine {builder->buildEngineWithConfig(*network, *config)};
     if (!engine.get())
         throw std::runtime_error("Error creating TensorRT engine");
+
+    if (engine->getNbBindings() != 2 || engine->bindingIsInput(0) == engine->bindingIsInput(1))
+        throw std::runtime_error("Wrong number of input and output buffers in TensorRT network");
+
+    for (int i = 0; i < engine->getNbBindings(); i++) {
+        int n = length(engine->getBindingDimensions(i));
+        int bits = size(engine->getBindingDataType(i));
+        bool input = engine->bindingIsInput(i);
+
+        cudaMalloc((void**)& (input ? gdata : metric), n * bits);
+    }
 
     context.reset(engine->createExecutionContext());
     if (!context.get())
@@ -45,8 +64,16 @@ RenderPassReflection JaliVRS::reflect(const CompileData& data)
     return reflector;
 }
 
-void JaliVRS::execute(RenderContext* context, const RenderData& data)
+void JaliVRS::execute(RenderContext* rcontext, const RenderData& data)
 {
+    auto shader = ComputePass::create("");
+    auto t = Buffer::createStructured();
+
+    shader["gdata"] = data["gdata"]->asBuffer();
+    shader["gdata"].getBuffer()->getGpuAddress();
+
+    //void** buffers;
+    //context->executeV2(buffers);
 }
 
 void JaliVRS::renderUI(Gui::Widgets& widget)

@@ -24,7 +24,7 @@ private:
     using RT = std::unique_ptr<T, Destroy>;
 
     RT<IExecutionContext> context;
-    RT<ICudaEngine> engine;
+    float *gdata, *metric;
     float limit = 0.25f;
     JaliVRS();
 
