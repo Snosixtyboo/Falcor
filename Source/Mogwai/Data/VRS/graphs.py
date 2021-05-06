@@ -14,7 +14,7 @@ loadRenderPassLibrary('GBuffer.dll')
 loadRenderPassLibrary('ImageLoader.dll')
 loadRenderPassLibrary('SSAO.dll')
 loadRenderPassLibrary('SkyBox.dll')
-#loadRenderPassLibrary('RemoteRenderPass.dll')
+loadRenderPassLibrary('RemoteRenderPass.dll')
 loadRenderPassLibrary('ToneMapper.dll')
 loadRenderPassLibrary('TemporalReproject.dll')
 

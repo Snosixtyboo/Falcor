@@ -11,7 +11,7 @@ m.scene.camera.farPlane = 100.0
 m.scene.cameraSpeed = 1.0
 m.addGraph(captureGraph())
 m.addGraph(vrsGraph())
-#m.addGraph(remoteGraph())
+m.addGraph(remoteGraph())
 
 # Window Configuration
 m.resizeSwapChain(3840, 2160)
