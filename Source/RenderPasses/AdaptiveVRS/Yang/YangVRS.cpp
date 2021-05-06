@@ -17,7 +17,7 @@ YangVRS::YangVRS()
     defines.add("LUMINANCE", std::to_string(luminance));
     defines.add("LIMIT", std::to_string(limit));
 
-    shader = ComputePass::create("RenderPasses/AdaptiveVRS/Lie/YangVRS.slang", "main", defines);
+    shader = ComputePass::create("RenderPasses/AdaptiveVRS/Yang/YangVRS.slang", "main", defines);
 }
 
 RenderPassReflection YangVRS::reflect(const CompileData& data)

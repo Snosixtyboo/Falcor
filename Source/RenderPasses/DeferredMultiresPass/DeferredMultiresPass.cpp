@@ -1,14 +1,10 @@
 #include "DeferredMultiresPass.h"
 
-// Don't remove this. it's required for hot-reload to function properly
-extern "C" __declspec(dllexport) const char* getProjDir()
-{
-    return PROJECT_DIR;
-}
-
+const char* DeferredMultiresPass::desc = "Deferred lighting pass at multiple shading rates.";
+extern "C" __declspec(dllexport) const char* getProjDir() { return PROJECT_DIR; }
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary & lib)
 {
-    lib.registerClass("DeferredMultiresPass", "Deferred rasterization at multiple shading rates.", DeferredMultiresPass::create);
+    lib.registerClass("DeferredMultiresPass", DeferredMultiresPass::desc, DeferredMultiresPass::create);
 }
 
 const ChannelList GBuffers =
@@ -32,38 +28,33 @@ const DeferredMultiresPass::ShadingRate ShadingRates[7] =
     {D3D12_SHADING_RATE_1X1, "color1x1"}
 };
 
-DeferredMultiresPass::DeferredMultiresPass()
-{
-    framebuffer = Fbo::create();
-    pass = FullScreenPass::create("RenderPasses/DeferredMultiresPass/DeferredMultiresPass.slang");
-    pass["gSampler"] = Sampler::create(Sampler::Desc().setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point));
-    sceneBlock = ParameterBlock::create(pass->getProgram()->getReflector()->getParameterBlock("tScene"));
-    vars = GraphicsVars::create(pass->getProgram()->getReflector());
-}
-
-
 void DeferredMultiresPass::setScene(RenderContext* context, const Scene::SharedPtr& scene)
 {
     if (scene) {
         this->scene = scene;
-        numLights = scene->getLightCount();
+        int numLights = scene->getLightCount();
 
-        if (numLights)  {
-            lightsBuffer = Buffer::createStructured(sizeof(LightData), (uint32_t)numLights, Resource::BindFlags::ShaderResource, Buffer::CpuAccess::None, nullptr, false);
-            lightsBuffer->setName("lightsBuffer");
+        pass = FullScreenPass::create("RenderPasses/DeferredMultiresPass/DeferredMultiresPass.slang", scene->getSceneDefines());
+        pass["gSampler"] = Sampler::create(Sampler::Desc().setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point));
+        pass["constants"]["numLights"] = numLights;
+
+        if (numLights) {
+            auto lights = Buffer::createStructured(sizeof(LightData), numLights, Resource::BindFlags::ShaderResource, Buffer::CpuAccess::None, nullptr, false);
+            lights->setName("lightsBuffer");
 
             for (int l = 0; l < numLights; l++) {
                 auto light = scene->getLight(l);
-                if (!light->isActive()) continue;
-                lightsBuffer->setElement(l, light->getData());
+                if (light->isActive())
+                    lights->setElement(l, light->getData());
             }
 
-            lightProbe = scene->getLightProbe();
-            if (lightProbe) {
-                lightProbe->setShaderData(sceneBlock["lightProbe"]);
-                vars->setParameterBlock("tScene", sceneBlock);
-                pass["tScene"] = sceneBlock;
-            }
+            pass["gLights"] = lights;
+        }
+
+        if (scene->useEnvLight()) {
+            auto vars = GraphicsVars::create(pass->getProgram()->getReflector());
+            auto envmap = EnvMapLighting::create(context, scene->getEnvMap());
+            envmap->setShaderData(vars["gEnvMapLighting"]);
         }
     }
 }
@@ -84,20 +75,17 @@ RenderPassReflection DeferredMultiresPass::reflect(const CompileData& data)
 void DeferredMultiresPass::execute(RenderContext* context, const RenderData& data)
 {
     if (scene) {
-        framebuffer->attachColorTarget(data["viewNormalsOut"]->asTexture(), 1);
+        auto constants = pass["constants"];
+        constants["cameraPosition"] = scene->getCamera()->getPosition();
+        constants["world2View"] = scene->getCamera()->getViewMatrix();
 
+        framebuffer->attachColorTarget(data["viewNormalsOut"]->asTexture(), 1);
         pass["gPosW"] = data["posW"]->asTexture();
         pass["gNormW"] = data["normW"]->asTexture();;
         pass["gDiffuse"] = data["diffuseOpacity"]->asTexture();;
         pass["gSpecRough"] = data["specRough"]->asTexture();
         pass["gEmissive"] = data["emissive"]->asTexture();
         pass["gVisibility"] = data["visibility"]->asTexture();
-        pass["lights"] = lightsBuffer;
-
-        auto constants = pass["constants"];
-        constants["cameraPosition"] = scene->getCamera()->getPosition();
-        constants["world2View"] = scene->getCamera()->getViewMatrix();
-        constants["lightCount"] = numLights;
 
         ID3D12GraphicsCommandList5Ptr directX;
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));

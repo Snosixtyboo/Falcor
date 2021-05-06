@@ -1,24 +1,20 @@
 #include "DeferredPass.h"
 
-// Don't remove this. it's required for hot-reload to function properly
-extern "C" __declspec(dllexport) const char* getProjDir()
-{
-    return PROJECT_DIR;
-}
-
+const char* DeferredPass::desc = "Deferred lighting pass with optional variable shading rate.";
+extern "C" __declspec(dllexport) const char* getProjDir() { return PROJECT_DIR; }
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary & lib)
 {
-    lib.registerClass("DeferredPass", "Deferred rasterization.", DeferredPass::create);
+    lib.registerClass("DeferredPass", DeferredPass::desc, DeferredPass::create);
 }
 
 const ChannelList GBuffers =
 {
-    { "depth",          "gDepth",           "depth buffer",                 false, ResourceFormat::D32Float},
-    { "posW",           "gPosW",            "world space position",         true},
-    { "normW",          "gNormW",           "world space normal",           true},
-    { "diffuseOpacity", "gDiffuseOpacity",  "diffuse color",                true},
-    { "specRough",      "gSpecRough",       "specular color",               true},
-    { "emissive",       "gEmissive",        "emissive color",               true},
+    { "depth",            "gDepth",           "depth buffer",                 false, ResourceFormat::D32Float},
+    { "posW",             "gPosW",            "world space position",         true},
+    { "normW",            "gNormW",           "world space normal",           true},
+    { "diffuseOpacity",   "gDiffuseOpacity",  "diffuse color",                true},
+    { "specRough",        "gSpecRough",       "specular color",               true},
+    { "emissive",         "gEmissive",        "emissive color",               true},
 };
 
 const D3D12_SHADING_RATE_COMBINER Combiners[] = {

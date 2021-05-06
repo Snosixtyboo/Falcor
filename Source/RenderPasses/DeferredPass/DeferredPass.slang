@@ -1,8 +1,8 @@
-import Utils.Color.ColorHelpers;
-import Scene.Lights.LightData;
 import Scene.Shading;
-import Utils.Helpers;
+import Scene.Lights.LightData;
 import Experimental.Scene.Lights.EnvMapLighting;
+import Utils.Helpers;
+import Utils.Color.ColorHelpers;
 
 cbuffer constants {
 	float3 cameraPosition;
@@ -26,7 +26,7 @@ struct Output {
 Output main(float2 uv : TEXCOORD) : SV_TARGET {
 	ShadingData material;
 	material.emissive = gEmissive.SampleLevel(gSampler, uv, 0).rgb;
-	material.posW = gPosW.SampleLevel(gSampler, uv, 0).rgb;
+	material.posW = gPosW.SampleLevel(gSampler, uv, 0).xyz;
 
 	if (material.posW.x == 0 && material.posW.y == 0 && material.posW.z == 0)
 		discard;
