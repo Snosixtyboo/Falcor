@@ -1,5 +1,6 @@
 #pragma once
 #include "Falcor.h"
+#include "FalcorExperimental.h"
 #include "RenderGraph/RenderPassHelpers.h"
 
 using namespace Falcor;
@@ -19,15 +20,9 @@ public:
     virtual void setScene(RenderContext* context, const Scene::SharedPtr& scene) override;
 
 private:
+    Fbo::SharedPtr framebuffer = Fbo::create();
     FullScreenPass::SharedPtr pass;
-    Fbo::SharedPtr framebuffer;
-    GraphicsVars::SharedPtr vars;
     Scene::SharedPtr scene;
-    ParameterBlock::SharedPtr sceneBlock;
 
-    int numLights;
-    Buffer::SharedPtr lightsBuffer;
-    LightProbe::SharedPtr lightProbe;
-
-    DeferredPass();
+    DeferredPass() {};
 };
