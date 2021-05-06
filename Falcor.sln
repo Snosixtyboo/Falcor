@@ -87,6 +87,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SceneWritePass", "Source\RenderPasses\SceneWritePass\SceneWritePass.vcxproj", "{A2CB8652-26CA-482A-B3C7-F5EE74FC3481}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RemoteRenderPass", "Source\RenderPasses\RemoteRenderPass\RemoteRenderPass.vcxproj", "{123F0D99-34D2-4A01-8AA1-6618DDEDE028}"
+	ProjectSection(ProjectDependencies) = postProject
+		{C6EB0AC0-FF3B-474E-A453-44D84329D13A} = {C6EB0AC0-FF3B-474E-A453-44D84329D13A}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SceneDebugger", "Source\RenderPasses\SceneDebugger\SceneDebugger.vcxproj", "{B1715F7A-6EFD-4910-B271-7423AB6961CB}"
 EndProject

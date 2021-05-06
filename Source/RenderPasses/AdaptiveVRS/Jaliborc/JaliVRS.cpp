@@ -1,14 +1,22 @@
-#include <cuda_runtime_api.h>
+//#include <cuda_runtime_api.h>
 #include "JaliVRS.h"
 #include "NvOnnxParser.h"
+
+class Log : public ILogger {
+public:
+    void log(Severity severity, const char* msg) override {
+        if ((severity == Severity::kERROR) || (severity == Severity::kINTERNAL_ERROR))
+            throw std::runtime_error(msg);
+    }
+} Log;
 
 int size(DataType t)
 {
     switch (t) {
         case DataType::kINT32:
-        case DataType::kFLOAT: return 4;
-        case DataType::kHALF:  return 2;
-        case DataType::kINT8:  return 1;
+        case DataType::kFLOAT: return 32;
+        case DataType::kHALF:  return 16;
+        case DataType::kINT8:  return 8;
     }
     return 0;
 }
@@ -26,11 +34,11 @@ JaliVRS::JaliVRS()
 {
     auto onnxPath = "JaliVRS.onnx";
 
-    RT<IBuilder> builder {createInferBuilder(Logger)};
+    RT<IBuilder> builder {createInferBuilder(Log)};
     RT<IBuilderConfig> config {builder->createBuilderConfig()};
     RT<INetworkDefinition> network {builder->createNetworkV2(1U << static_cast<uint32_t>(NetworkDefinitionCreationFlag::kEXPLICIT_BATCH))};
 
-    RT<nvonnxparser::IParser> parser {nvonnxparser::createParser(*network, Logger)};
+    RT<nvonnxparser::IParser> parser {nvonnxparser::createParser(*network, Log)};
     if (!parser->parseFromFile(onnxPath, static_cast<int>(ILogger::Severity::kINFO)))
         throw std::runtime_error("Could not parse ONNX file");
 
@@ -45,11 +53,14 @@ JaliVRS::JaliVRS()
         throw std::runtime_error("Wrong number of input and output buffers in TensorRT network");
 
     for (int i = 0; i < engine->getNbBindings(); i++) {
-        int n = length(engine->getBindingDimensions(i));
         int bits = size(engine->getBindingDataType(i));
-        bool input = engine->bindingIsInput(i);
+        int n = length(engine->getBindingDimensions(i));
+        auto buffer = Buffer::createStructured(bits, n, Resource::BindFlags::Shared, Buffer::CpuAccess::None, nullptr, false);
 
-        cudaMalloc((void**)& (input ? gdata : metric), n * bits);
+        if (engine->bindingIsInput(i))
+            gdata = buffer->getCUDADeviceAddress();
+        else
+            metric = buffer->getCUDADeviceAddress();
     }
 
     context.reset(engine->createExecutionContext());
@@ -66,14 +77,8 @@ RenderPassReflection JaliVRS::reflect(const CompileData& data)
 
 void JaliVRS::execute(RenderContext* rcontext, const RenderData& data)
 {
-    auto shader = ComputePass::create("");
-    auto t = Buffer::createStructured();
-
-    shader["gdata"] = data["gdata"]->asBuffer();
-    shader["gdata"].getBuffer()->getGpuAddress();
-
-    //void** buffers;
-    //context->executeV2(buffers);
+    /*void* buffers[] = { gdata, metric };
+    context->executeV2(buffers);*/
 }
 
 void JaliVRS::renderUI(Gui::Widgets& widget)

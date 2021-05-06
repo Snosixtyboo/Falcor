@@ -14,7 +14,8 @@ m.addGraph(vrsGraph())
 m.addGraph(remoteGraph())
 
 # Window Configuration
-m.resizeSwapChain(3840, 2160)
+#m.resizeSwapChain(3840, 2160)
+m.resizeSwapChain(1920, 1080)
 m.ui = True
 fc.outputDir = '.'
 t.framerate = 0

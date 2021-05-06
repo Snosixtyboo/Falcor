@@ -13,8 +13,9 @@ private:
 public:
     using SharedPtr = std::shared_ptr<VRSDebug>;
     static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {}) {return SharedPtr(new VRSDebug);};
-    virtual std::string getDesc() override { return "Shows a VRS texture as color"; }
+    static const char* desc;
 
+    virtual std::string getDesc() override { return desc; }
     virtual RenderPassReflection reflect(const CompileData& data) override;
     virtual void compile(RenderContext* context, const CompileData& data) override {};
     virtual void execute(RenderContext* context, const RenderData& data) override;

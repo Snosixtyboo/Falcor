@@ -113,6 +113,7 @@ def vrsGraph():
     g.addPass(createPass('DeferredPass'), 'Shading')
     g.addPass(createPass('VRSDebug'), 'VRSDebug')
     g.addPass(createPass('YangVRS'), 'YangVRS')
+    g.addPass(createPass('JaliVRS'), 'JaliVRS')
     g.addPass(createPass('SkyBox'), 'SkyBox')
     g.addPass(createPass('FXAA'), 'FXAA')
     g.addPass(createPass('SSAO'), 'SSAO')

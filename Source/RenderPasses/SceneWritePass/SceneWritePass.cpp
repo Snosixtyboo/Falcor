@@ -115,7 +115,7 @@ void SceneWritePass::execute(RenderContext* pContext, const RenderData& renderDa
         view.SizeInBytes = mDumpGeomSize;
         pContext->getLowLevelData()->getCommandList()->SOSetTargets(0, 1, &view);
 
-        mpScene->render(pContext, mpState.get(), mpVars.get(), mpRsState ? Scene::RenderFlags::UserRasterizerState : Scene::RenderFlags::None);
+        mpScene->rasterize(pContext, mpState.get(), mpVars.get(), mpRsState ? Scene::RenderFlags::UserRasterizerState : Scene::RenderFlags::None);
 
         // Wait for finish, write captured data
         gpDevice->flushAndSync();
