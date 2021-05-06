@@ -1,24 +1,20 @@
 #include "DeferredPass.h"
 
-// Don't remove this. it's required for hot-reload to function properly
-extern "C" __declspec(dllexport) const char* getProjDir()
-{
-    return PROJECT_DIR;
-}
-
+const char* DeferredPass::desc = "Deferred lighting pass with optional variable shading rate.";
+extern "C" __declspec(dllexport) const char* getProjDir() { return PROJECT_DIR; }
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary & lib)
 {
-    lib.registerClass("DeferredPass", "Deferred rasterization.", DeferredPass::create);
+    lib.registerClass("DeferredPass", DeferredPass::desc, DeferredPass::create);
 }
 
 const ChannelList GBuffers =
 {
-    { "depth",          "gDepth",           "depth buffer",                 false, ResourceFormat::D32Float},
-    { "posW",           "gPosW",            "world space position",         true},
-    { "normW",          "gNormW",           "world space normal",           true},
-    { "diffuseOpacity", "gDiffuseOpacity",  "diffuse color",                true},
-    { "specRough",      "gSpecRough",       "specular color",               true},
-    { "emissive",       "gEmissive",        "emissive color",               true},
+    { "depth",            "gDepth",           "depth buffer",                 false, ResourceFormat::D32Float},
+    { "posW",             "gPosW",            "world space position",         true},
+    { "normW",            "gNormW",           "world space normal",           true},
+    { "diffuseOpacity",   "gDiffuseOpacity",  "diffuse color",                true},
+    { "specRough",        "gSpecRough",       "specular color",               true},
+    { "emissive",         "gEmissive",        "emissive color",               true},
 };
 
 const D3D12_SHADING_RATE_COMBINER Combiners[] = {
@@ -26,38 +22,33 @@ const D3D12_SHADING_RATE_COMBINER Combiners[] = {
     D3D12_SHADING_RATE_COMBINER_OVERRIDE
 };
 
-DeferredPass::DeferredPass()
-{
-    framebuffer = Fbo::create();
-    pass = FullScreenPass::create("RenderPasses/DeferredPass/DeferredPass.slang");
-    pass["gSampler"] = Sampler::create(Sampler::Desc().setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point));
-    sceneBlock = ParameterBlock::create(pass->getProgram()->getReflector()->getParameterBlock("tScene"));
-    vars = GraphicsVars::create(pass->getProgram()->getReflector());
-}
-
-
 void DeferredPass::setScene(RenderContext* context, const Scene::SharedPtr& scene)
 {
     if (scene) {
         this->scene = scene;
-        numLights = scene->getLightCount();
+        int numLights = scene->getLightCount();
 
-        if (numLights)  {
-            lightsBuffer = Buffer::createStructured(sizeof(LightData), (uint32_t)numLights, Resource::BindFlags::ShaderResource, Buffer::CpuAccess::None, nullptr, false);
-            lightsBuffer->setName("lightsBuffer");
+        pass = FullScreenPass::create("RenderPasses/DeferredPass/DeferredPass.slang", scene->getSceneDefines());
+        pass["gSampler"] = Sampler::create(Sampler::Desc().setFilterMode(Sampler::Filter::Point, Sampler::Filter::Point, Sampler::Filter::Point));
+        pass["constants"]["numLights"] = numLights;
+
+        if (numLights) {
+            auto lights = Buffer::createStructured(sizeof(LightData), numLights, Resource::BindFlags::ShaderResource, Buffer::CpuAccess::None, nullptr, false);
+            lights->setName("lightsBuffer");
 
             for (int l = 0; l < numLights; l++) {
                 auto light = scene->getLight(l);
-                if (!light->isActive()) continue;
-                lightsBuffer->setElement(l, light->getData());
+                if (light->isActive())
+                    lights->setElement(l, light->getData());
             }
 
-            lightProbe = scene->getLightProbe();
-            if (lightProbe) {
-                lightProbe->setShaderData(sceneBlock["lightProbe"]);
-                vars->setParameterBlock("tScene", sceneBlock);
-                pass["tScene"] = sceneBlock;
-            }
+            pass["gLights"] = lights;
+        }
+
+        if (scene->useEnvLight()) {
+            auto vars = GraphicsVars::create(pass->getProgram()->getReflector());
+            auto envmap = EnvMapLighting::create(context, scene->getEnvMap());
+            envmap->setShaderData(vars["gEnvMapLighting"]);
         }
     }
 }
@@ -82,8 +73,6 @@ void DeferredPass::execute(RenderContext* context, const RenderData& data)
         pass["gEmissive"] = data["emissive"]->asTexture();
         pass["gVisibility"] = data["visibility"]->asTexture();
         pass["constants"]["cameraPosition"] = scene->getCamera()->getPosition();
-        pass["constants"]["lightCount"] = numLights;
-        pass["lights"] = lightsBuffer;
 
         ID3D12GraphicsCommandList5Ptr directX;
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));

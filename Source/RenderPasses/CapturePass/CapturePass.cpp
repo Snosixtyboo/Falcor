@@ -14,7 +14,7 @@ extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary & lib)
 
 const ChannelList DumpChannels =
 {
-    { "reproject",    "reproject_1x1",   "Previous frame reprojected shading result",       true },
+    { "reproject",    "reproject_1x1",   "Temporal reprojection of shading result",         true },
     { "diffuse",      "diffuse_1x1",     "Diffuse color"                                         },
     { "specular",     "specular_1x1",    "Specular color + roughness",                      true },
     { "emissive",     "emissive_1x1",    "Emissive color"                                        },

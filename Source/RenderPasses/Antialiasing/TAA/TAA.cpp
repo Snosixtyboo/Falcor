@@ -31,9 +31,9 @@ const char* TAA::kDesc = "Temporal Anti-Aliasing";
 
 namespace
 {
-    const std::string kMotionVec = "motionVecs";
-    const std::string kColorIn = "colorIn";
-    const std::string kColorOut = "colorOut";
+    const std::string kMotionVec = "mvec";
+    const std::string kColorIn = "src";
+    const std::string kColorOut = "dst";
 
     const std::string kAlpha = "alpha";
     const std::string kColorBoxSigma = "colorBoxSigma";
@@ -75,7 +75,7 @@ RenderPassReflection TAA::reflect(const CompileData& compileData)
     RenderPassReflection reflection;
     reflection.addInput(kMotionVec, "Screen-space motion vectors");
     reflection.addInput(kColorIn, "Color-buffer of the current frame");
-    reflection.addInputOutput(kColorOut, "Anti-aliased color buffer").flags(RenderPassReflection::Field::Flags::Optional);
+    reflection.addInputOutput(kColorOut, "Anti-aliased color buffer");
     return reflection;
 }
 

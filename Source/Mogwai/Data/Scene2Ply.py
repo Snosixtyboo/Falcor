@@ -1,7 +1,7 @@
 from falcor import *
 
 def render_graph_DefaultRenderGraph():
-    g = RenderGraph('DefaultRenderGraph')
+    g = RenderGraph('Scene2Ply')
     loadRenderPassLibrary('BSDFViewer.dll')
     loadRenderPassLibrary('AccumulatePass.dll')
     loadRenderPassLibrary('DepthPass.dll')
@@ -17,8 +17,8 @@ def render_graph_DefaultRenderGraph():
     loadRenderPassLibrary('SkyBox.dll')
     loadRenderPassLibrary('ToneMapper.dll')
     loadRenderPassLibrary('Utils.dll')
-    SceneWritePass = createPass('SceneWritePass', {'depthFormat': ResourceFormat.D32Float, 'outFile': '../../../out.ply'})
-    g.addPass(SceneWritePass, 'SceneWritePass')
+    
+    g.addPass(createPass('SceneWritePass', {'depthFormat': ResourceFormat.D32Float, 'outFile': '../../../out.ply'}), 'SceneWritePass')
     g.markOutput('SceneWritePass.depth')
     return g
 
