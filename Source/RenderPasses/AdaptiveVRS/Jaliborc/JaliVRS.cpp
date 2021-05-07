@@ -33,6 +33,10 @@ int length(Dims shape)
 JaliVRS::JaliVRS()
 {
     auto onnxPath = "JaliVRS.onnx";
+    auto* file = fopen(onnxPath, "r");
+    if (file == NULL)
+        throw std::runtime_error("Could not open ONNX file");
+    fclose(file);
 
     RT<IBuilder> builder {createInferBuilder(Log)};
     RT<IBuilderConfig> config {builder->createBuilderConfig()};
