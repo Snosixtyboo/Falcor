@@ -82,13 +82,13 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(FALCOR_CORE_DIRECTORY)\Externals\tensorRT\include;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FALCOR_CORE_DIRECTORY)\Externals\tensorRT\include;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\Cuda\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(FALCOR_CORE_DIRECTORY)\Externals\tensorRT\lib;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\Cuda\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>nvinfer.lib;nvonnxparser.lib;nvparsers.lib;cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nvinfer.lib;nvonnxparser.lib;nvparsers.lib;cudart.lib;cuda.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -103,7 +103,7 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(FALCOR_CORE_DIRECTORY)\Externals\tensorRT\include;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(FALCOR_CORE_DIRECTORY)\Externals\tensorRT\include;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\Cuda\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -111,7 +111,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(FALCOR_CORE_DIRECTORY)\Externals\tensorRT\lib;$(FALCOR_CORE_DIRECTORY)\Externals\.packman\Cuda\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>nvinfer.lib;nvonnxparser.lib;nvparsers.lib;cudart.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>nvinfer.lib;nvonnxparser.lib;nvparsers.lib;cudart.lib;cuda.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

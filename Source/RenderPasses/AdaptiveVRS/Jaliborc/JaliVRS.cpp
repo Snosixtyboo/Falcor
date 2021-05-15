@@ -1,6 +1,7 @@
-//#include <cuda_runtime_api.h>
 #include "JaliVRS.h"
-#include "NvOnnxParser.h"
+#include <NvOnnxParser.h>
+#include <filesystem>
+#include <cuda.h>
 
 class Log : public ILogger {
 public:
@@ -30,13 +31,24 @@ int length(Dims shape)
     return length;
 }
 
+void resetCuda()
+{
+    cuInit(0);
+    CUcontext context;
+    cuCtxGetCurrent(&context);
+    CUdevice device;
+    cuCtxGetDevice(&device);
+    cuCtxCreate(&context, 0, device);
+    cuCtxSetCurrent(context);
+}
+
 JaliVRS::JaliVRS()
 {
+    resetCuda(); // because magic
+
     auto onnxPath = "JaliVRS.onnx";
-    auto* file = fopen(onnxPath, "r");
-    if (file == NULL)
-        throw std::runtime_error("Could not open ONNX file");
-    fclose(file);
+    if (!std::filesystem::exists(onnxPath))
+        throw std::runtime_error("ONNX file not found");
 
     RT<IBuilder> builder {createInferBuilder(Log)};
     RT<IBuilderConfig> config {builder->createBuilderConfig()};
@@ -81,8 +93,8 @@ RenderPassReflection JaliVRS::reflect(const CompileData& data)
 
 void JaliVRS::execute(RenderContext* rcontext, const RenderData& data)
 {
-    /*void* buffers[] = { gdata, metric };
-    context->executeV2(buffers);*/
+    void* buffers[] = { gdata, metric };
+    context->executeV2(buffers);
 }
 
 void JaliVRS::renderUI(Gui::Widgets& widget)
