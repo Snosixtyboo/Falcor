@@ -46,7 +46,7 @@ JaliVRS::JaliVRS()
 {
     resetCuda(); // because magic
 
-    auto onnxPath = "JaliVRS.onnx";
+    auto onnxPath = "../RenderPasses/AdaptiveVRS/Jaliborc/JaliVRS.onnx";
     if (!std::filesystem::exists(onnxPath))
         throw std::runtime_error("ONNX file not found");
 
@@ -69,32 +69,37 @@ JaliVRS::JaliVRS()
         throw std::runtime_error("Wrong number of input and output buffers in TensorRT network");
 
     for (int i = 0; i < engine->getNbBindings(); i++) {
-        int bits = size(engine->getBindingDataType(i));
-        int n = length(engine->getBindingDimensions(i));
-        auto buffer = Buffer::createStructured(bits, n, Resource::BindFlags::Shared, Buffer::CpuAccess::None, nullptr, false);
+        auto shape = engine->getBindingDimensions(i);
+        auto bits = size(engine->getBindingDataType(i));
+        auto buffer = Buffer::createStructured(bits, length(shape), Resource::BindFlags::Shared, Buffer::CpuAccess::None, nullptr, false);
 
-        if (engine->bindingIsInput(i))
+        if (engine->bindingIsInput(i)) {
             gdata = buffer->getCUDADeviceAddress();
-        else
+            resIn = int2(shape.d[3], shape.d[2]);
+        } else {
             metric = buffer->getCUDADeviceAddress();
+            resOut = int2(shape.d[3], shape.d[2]);
+        }
     }
 
-    context.reset(engine->createExecutionContext());
-    if (!context.get())
-        throw std::runtime_error("Error creating TensorRT context");
+    neural.reset(engine->createExecutionContext());
+    copyOut = ComputePass::create("RenderPasses/AdaptiveVRS/Jaliborc/CopyOut.slang", "main");
+    copyIn = ComputePass::create("RenderPasses/AdaptiveVRS/Jaliborc/CopyIn.slang", "main");
+    copyOut["constant"]["resolution"] = resOut;
+    copyIn["constant"]["resolution"] = resIn;
 }
 
 RenderPassReflection JaliVRS::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
-    reflector.addInput("fake", "Fake");
+    reflector.addOutput("rate", "Rate").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::R8Uint).texture2D(resOut.x, resOut.y);
     return reflector;
 }
 
 void JaliVRS::execute(RenderContext* rcontext, const RenderData& data)
 {
     void* buffers[] = { gdata, metric };
-    context->executeV2(buffers);
+    neural->executeV2(buffers);
 }
 
 void JaliVRS::renderUI(Gui::Widgets& widget)

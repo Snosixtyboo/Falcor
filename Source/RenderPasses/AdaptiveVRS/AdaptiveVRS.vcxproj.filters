@@ -41,6 +41,12 @@
     <ShaderSource Include="Yang\YangVRS.slang">
       <Filter>Yang</Filter>
     </ShaderSource>
+    <ShaderSource Include="Jaliborc\CopyIn.slang">
+      <Filter>Jaliborc</Filter>
+    </ShaderSource>
+    <ShaderSource Include="Jaliborc\CopyOut.slang">
+      <Filter>Jaliborc</Filter>
+    </ShaderSource>
   </ItemGroup>
   <ItemGroup>
     <None Include="Jaliborc\JaliVRS.onnx">

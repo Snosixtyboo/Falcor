@@ -15,7 +15,9 @@ private:
     template<class T>
     using RT = std::unique_ptr<T, Destroy>;
 
-    RT<IExecutionContext> context;
+    uint2 resIn, resOut;
+    ComputePass::SharedPtr copyIn, copyOut;
+    RT<IExecutionContext> neural;
     void *gdata, *metric;
     float limit = 0.25f;
     JaliVRS();

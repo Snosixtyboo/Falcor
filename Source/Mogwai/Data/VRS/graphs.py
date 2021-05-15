@@ -104,8 +104,8 @@ def captureGraph():
     g.markOutput('Capture.extras')
     return g
 
-def vrsGraph():
-    g = RenderGraph('AdaptiveVRS')
+def yangGraph():
+    g = RenderGraph('YangVRS')
     g.addPass(createPass('BlitPass'), 'CSMBlit')
     g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'Raster')
     g.addPass(createPass('ToneMapper', {'autoExposure': True}), 'ToneMapper')
@@ -113,7 +113,6 @@ def vrsGraph():
     g.addPass(createPass('DeferredPass'), 'Shading')
     g.addPass(createPass('VRSDebug'), 'VRSDebug')
     g.addPass(createPass('YangVRS'), 'YangVRS')
-    g.addPass(createPass('JaliVRS'), 'JaliVRS')
     g.addPass(createPass('SkyBox'), 'SkyBox')
     g.addPass(createPass('FXAA'), 'FXAA')
     g.addPass(createPass('SSAO'), 'SSAO')
@@ -148,6 +147,53 @@ def vrsGraph():
 
     # Debug
     g.addEdge('YangVRS.rate', 'VRSDebug.rate')
+    g.addEdge('FXAA.dst', 'VRSDebug.rendering')
+    g.markOutput('VRSDebug.color')
+    return g
+
+def jaliGraph():
+    g = RenderGraph('JaliVRS')
+    g.addPass(createPass('BlitPass'), 'CSMBlit')
+    g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'Raster')
+    g.addPass(createPass('ToneMapper', {'autoExposure': True}), 'ToneMapper')
+    g.addPass(createPass('TemporalReproject'), 'Reproject')
+    g.addPass(createPass('DeferredPass'), 'Shading')
+    g.addPass(createPass('VRSDebug'), 'VRSDebug')
+    g.addPass(createPass('JaliVRS'), 'JaliVRS')
+    g.addPass(createPass('SkyBox'), 'SkyBox')
+    g.addPass(createPass('FXAA'), 'FXAA')
+    g.addPass(createPass('SSAO'), 'SSAO')
+    g.addPass(createPass('CSM'), 'CSM')
+
+    # Raster
+    g.addEdge('Raster.depth', 'CSM.depth')
+    g.addEdge('Raster.posW', 'Shading.posW')
+    g.addEdge('Raster.normW', 'Shading.normW')
+    g.addEdge('Raster.diffuseOpacity', 'Shading.diffuseOpacity')
+    g.addEdge('Raster.specRough', 'Shading.specRough')
+    g.addEdge('Raster.emissive', 'Shading.emissive')
+    g.addEdge('Raster.depth', 'Shading.depth')
+    g.addEdge('Raster.depth', 'SSAO.depth')
+    g.addEdge('Raster.depth', 'SkyBox.depth')
+    g.addEdge('Raster.normW', 'SSAO.normals')
+    g.addEdge('Raster.mvec', 'Reproject.motion')
+
+    # Features
+    g.addEdge('CSM.visibility', 'Shading.visibility')
+    g.addEdge('CSM.visibility', 'CSMBlit.src')
+    #g.addEdge('Reproject.dst', 'YangVRS.input')
+    g.addEdge('JaliVRS.rate', 'Shading.vrs')
+
+    # Post-Processing
+    g.addEdge('SkyBox.target', 'Shading.output')
+    g.addEdge('Shading.output', 'ToneMapper.src')
+    g.addEdge('ToneMapper.dst', 'SSAO.colorIn')
+    g.addEdge('SSAO.colorOut', 'FXAA.src')
+    g.addEdge('Reproject.target', 'FXAA.dst')
+    g.markOutput('FXAA.dst')
+
+    # Debug
+    g.addEdge('JaliVRS.rate', 'VRSDebug.rate')
     g.addEdge('FXAA.dst', 'VRSDebug.rendering')
     g.markOutput('VRSDebug.color')
     return g

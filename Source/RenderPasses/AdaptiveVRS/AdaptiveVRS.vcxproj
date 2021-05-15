@@ -42,6 +42,8 @@
   </ItemGroup>
   <ItemGroup>
     <ShaderSource Include="Debug\VRSDebug.slang" />
+    <ShaderSource Include="Jaliborc\CopyIn.slang" />
+    <ShaderSource Include="Jaliborc\CopyOut.slang" />
     <ShaderSource Include="Yang\YangVRS.slang" />
   </ItemGroup>
   <ItemGroup>
