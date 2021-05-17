@@ -181,7 +181,9 @@ def jaliGraph():
     # Features
     g.addEdge('CSM.visibility', 'Shading.visibility')
     g.addEdge('CSM.visibility', 'CSMBlit.src')
-    #g.addEdge('Reproject.dst', 'YangVRS.input')
+    g.addEdge('Reproject.dst', 'JaliVRS.reproject')
+    g.addEdge('Raster.diffuseOpacity', 'JaliVRS.diffuse')
+    g.addEdge('Raster.normW', 'JaliVRS.normals')
     g.addEdge('JaliVRS.rate', 'Shading.vrs')
 
     # Post-Processing

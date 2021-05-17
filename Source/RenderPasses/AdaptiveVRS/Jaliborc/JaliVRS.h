@@ -17,8 +17,9 @@ private:
 
     uint2 resIn, resOut;
     ComputePass::SharedPtr copyIn, copyOut;
+    Buffer::SharedPtr gdata, metric;
     RT<IExecutionContext> neural;
-    void *gdata, *metric;
+    std::vector<void*> buffers;
     float limit = 0.25f;
     JaliVRS();
 

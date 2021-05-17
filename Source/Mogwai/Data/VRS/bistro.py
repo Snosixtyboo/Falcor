@@ -9,8 +9,8 @@ m.scene.setEnvMap(p + '/Bistro/san_giuseppe_bridge_4k.hdr')
 m.scene.camera.nearPlane = 0.10000000149011612
 m.scene.camera.farPlane = 100.0
 m.scene.cameraSpeed = 1.0
-m.addGraph(yangGraph())
 m.addGraph(jaliGraph())
+m.addGraph(yangGraph())
 m.addGraph(captureGraph())
 m.addGraph(remoteGraph())
 

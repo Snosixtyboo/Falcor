@@ -46,7 +46,7 @@ JaliVRS::JaliVRS()
 {
     resetCuda(); // because magic
 
-    auto onnxPath = "../RenderPasses/AdaptiveVRS/Jaliborc/JaliVRS.onnx";
+    auto onnxPath = "../RenderPasses/AdaptiveVRS/Jaliborc/4channel.onnx";
     if (!std::filesystem::exists(onnxPath))
         throw std::runtime_error("ONNX file not found");
 
@@ -74,12 +74,14 @@ JaliVRS::JaliVRS()
         auto buffer = Buffer::createStructured(bits, length(shape), Resource::BindFlags::Shared, Buffer::CpuAccess::None, nullptr, false);
 
         if (engine->bindingIsInput(i)) {
-            gdata = buffer->getCUDADeviceAddress();
             resIn = int2(shape.d[3], shape.d[2]);
+            gdata = buffer;
         } else {
-            metric = buffer->getCUDADeviceAddress();
             resOut = int2(shape.d[3], shape.d[2]);
+            metric = buffer;
         }
+
+        buffers.push_back(buffer->getCUDADeviceAddress());
     }
 
     neural.reset(engine->createExecutionContext());
@@ -93,13 +95,25 @@ RenderPassReflection JaliVRS::reflect(const CompileData& data)
 {
     RenderPassReflection reflector;
     reflector.addOutput("rate", "Rate").bindFlags(ResourceBindFlags::UnorderedAccess).format(ResourceFormat::R8Uint).texture2D(resOut.x, resOut.y);
+    reflector.addInput("reproject", "Reproject");
+    reflector.addInput("diffuse", "Diffuse");
+    reflector.addInput("normals", "Normals");
     return reflector;
 }
 
-void JaliVRS::execute(RenderContext* rcontext, const RenderData& data)
+void JaliVRS::execute(RenderContext* context, const RenderData& data)
 {
-    void* buffers[] = { gdata, metric };
-    neural->executeV2(buffers);
+    copyIn["buffer"] = gdata;
+    copyIn["reproject"] = data["reproject"]->asTexture();
+    copyIn["diffuse"] = data["diffuse"]->asTexture();
+    copyIn["normals"] = data["normals"]->asTexture();
+    copyIn->execute(context, resIn.x, resIn.y);
+
+    neural->executeV2(buffers.data());
+
+    copyOut["buffer"] = metric;
+    copyOut["rate"] = data["rate"]->asTexture();
+    copyOut->execute(context, resOut.x, resOut.y);
 }
 
 void JaliVRS::renderUI(Gui::Widgets& widget)
