@@ -20,3 +20,4 @@ Tests/data
 Scenes/
 Samples/
 *.tlog
+*.onnx
