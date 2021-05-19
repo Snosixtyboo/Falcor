@@ -25,13 +25,13 @@ m.scene.getLight(9).active = True
 m.scene.getLight(10).active = True
 m.scene.getLight(11).active = True
 m.scene.getLight(12).active = True
+m.addGraph(yangGraph())
 m.addGraph(captureGraph())
-m.addGraph(vrsGraph())
 m.addGraph(remoteGraph())
 
 # Window
-m.resizeSwapChain(1920, 1080)
 m.ui = True
-fc.outputDir = '.'
-t.framerate = 0
-t.time = 0
+m.resizeSwapChain(1920, 1080)
+m.frameCapture.outputDir = '.'
+m.clock.framerate = 0
+m.clock.time = 0
