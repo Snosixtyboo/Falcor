@@ -47,16 +47,16 @@ Output main(float2 uv : TEXCOORD) : SV_TARGET {
 	material.uv = uv;
 
 	float4 color = float4(0, 0, 0, 1);
-	float visibility = gVisibility.SampleLevel(gSampler, uv, 0).r * material.opacity;
+	float shadow = gVisibility.SampleLevel(gSampler, uv, 0).r * material.opacity;
 
 	for (uint l = 0; l < numLights; l++) {
-		float shadowing;
-	  if (l == 0)
-			shadowing = visibility;
+	    float visibility;
+	    if (l == 0)
+			visibility = shadow;
 		else
-			shadowing = 0;
+			visibility = 1;
 
-		color.rgb += evalMaterial(material, gLights[l], shadowing).color;
+		color.rgb += evalMaterial(material, gLights[l], visibility).color;
 	}
 
 	color.a = material.opacity;
