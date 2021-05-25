@@ -15,9 +15,9 @@ m.addGraph(captureGraph())
 m.addGraph(remoteGraph())
 
 # Window Configuration
+m.ui = True
 m.resizeSwapChain(3840, 2160)
 #m.resizeSwapChain(1920, 1080)
-m.ui = True
-fc.outputDir = '.'
-t.framerate = 0
-t.time = 0
+m.frameCapture.outputDir = '.'
+m.clock.framerate = 0
+m.clock.time = 0

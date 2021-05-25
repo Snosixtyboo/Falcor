@@ -17,7 +17,6 @@ private:
 
     uint2 resIn, resOut;
     ComputePass::SharedPtr copyIn, copyOut;
-    Buffer::SharedPtr gdata, metric;
     RT<IExecutionContext> neural;
     std::vector<void*> buffers;
     float limit = 0.25f;
