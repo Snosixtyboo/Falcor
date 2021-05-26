@@ -127,6 +127,9 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="FalcorTest.h" />
+  </ItemGroup>
+  <ItemGroup>
     <Filter Include="Tests">
       <UniqueIdentifier>{ce64d89a-ce01-4012-9706-d3f24f5da801}</UniqueIdentifier>
     </Filter>
@@ -267,8 +270,5 @@
     <ShaderSource Include="Tests\Sampling\AliasTableTests.cs.slang">
       <Filter>Tests\Sampling</Filter>
     </ShaderSource>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="FalcorTest.h" />
   </ItemGroup>
 </Project>
