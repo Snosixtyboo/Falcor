@@ -1,33 +1,29 @@
 #include "CapturePass.h"
 #include <filesystem>
 
-// Don't remove this. it's required for hot-reload to function properly
-extern "C" __declspec(dllexport) const char* getProjDir()
-{
-    return PROJECT_DIR;
-}
-
+const char* CapturePass::desc = "Dumps rendering data at multiple shading resolutions to image files.";
+extern "C" __declspec(dllexport) const char* getProjDir() { return PROJECT_DIR; }
 extern "C" __declspec(dllexport) void getPasses(Falcor::RenderPassLibrary & lib)
 {
-    lib.registerClass("CapturePass", "Dumps rendering data at multiple shading resolutions to image files.", CapturePass::create);
+    lib.registerClass("CapturePass", CapturePass::desc, CapturePass::create);
 }
 
 const ChannelList DumpChannels =
 {
-    { "reproject",    "reproject_1x1",   "Temporal reprojection of shading result",         true },
-    { "diffuse",      "diffuse_1x1",     "Diffuse color"                                         },
-    { "specular",     "specular_1x1",    "Specular color + roughness",                      true },
-    { "emissive",     "emissive_1x1",    "Emissive color"                                        },
-    { "normals",      "normals_1x1",      "View-space normals",                                  },
-    { "extras",       "extra_1x1",       "Any additional inputs"                                 },
+    { "reproject",    "reproject_1x1",   "Temporal reprojection of shading result",       true },
+    { "diffuse",      "diffuse_1x1",     "Diffuse color"                                       },
+    { "specular",     "specular_1x1",    "Specular color + roughness",                    true },
+    { "emissive",     "emissive_1x1",    "Emissive color"                                      },
+    { "normals",      "normals_1x1",      "View-space normals",                                },
+    { "extras",       "extra_1x1",       "Any additional inputs"                               },
 
-    { "color1x1",     "output_1x1",      "Full shading result"                                   },
-    { "color1x2",     "output_1x2",      "1x2 shading result"                                    },
-    { "color2x1",     "output_2x1",      "2x1 shading result"                                    },
-    { "color2x2",     "output_2x2",      "Half shading result"                                   },
-    { "color2x4",     "output_2x4",      "2x4 shading result"                                    },
-    { "color4x2",     "output_4x2",      "4x2 shading result"                                    },
-    { "color4x4",     "output_4x4",      "Quarter shading result"                                }
+    { "color1x1",     "output_1x1",      "Full shading result"                                 },
+    { "color1x2",     "output_1x2",      "1x2 shading result"                                  },
+    { "color2x1",     "output_2x1",      "2x1 shading result"                                  },
+    { "color2x2",     "output_2x2",      "Half shading result"                                 },
+    { "color2x4",     "output_2x4",      "2x4 shading result"                                  },
+    { "color4x2",     "output_4x2",      "4x2 shading result"                                  },
+    { "color4x4",     "output_4x4",      "Quarter shading result"                              }
 };
 
 const auto ReprojectChannel = DumpChannels[0];

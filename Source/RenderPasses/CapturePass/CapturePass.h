@@ -12,13 +12,14 @@ public:
     using SharedPtr = std::shared_ptr<CapturePass>;
 
     static SharedPtr create(RenderContext* context = nullptr, const Dictionary& dict = {});
-    virtual std::string getDesc() override { return "Dumps rendering data at multiple shading resolutions to image files."; }
+    static const char* desc;
 
     virtual RenderPassReflection reflect(const CompileData& data) override;
     virtual void compile(RenderContext* context, const CompileData& data) override {}
     virtual void setScene(RenderContext* context, const Scene::SharedPtr& scene) override;
     virtual void execute(RenderContext* context, const RenderData& data) override;
     virtual void renderUI(Gui::Widgets& widget) override;
+    virtual std::string getDesc() override { return desc; }
 
 private:
     std::string dumpDir = ".";

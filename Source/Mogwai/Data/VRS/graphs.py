@@ -38,7 +38,6 @@ def remoteGraph():
 def captureGraph():
     g = RenderGraph('DeferredCapture')
     g.addPass(createPass('CSM'), 'CSM')
-    g.addPass(createPass('BlitPass'), 'CSMBlit')
     g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'Raster')
     g.addPass(createPass('DeferredMultiresPass'), 'Shading')
     g.addPass(createPass('TemporalReproject'), 'Reproject')
@@ -47,8 +46,6 @@ def captureGraph():
     # Raster
     g.addEdge('Raster.depth', 'CSM.depth')
     g.addEdge('Raster.mvec', 'Reproject.motion')
-
-    g.addEdge('CSM.visibility', 'CSMBlit.src')
     g.addEdge('CSM.visibility', 'Shading.visibility')
 
     g.addEdge('Raster.posW', 'Shading.posW')
@@ -94,7 +91,7 @@ def captureGraph():
     g.addEdge('Raster.emissive', 'Capture.emissive')
     g.addEdge('Reproject.dst', 'Capture.reproject')
     g.addEdge('Shading.viewNormalsOut', 'Capture.normals')
-    g.addEdge('CSMBlit.dst', 'Capture.extras')
+    g.addEdge('Shading.extrasOut', 'Capture.extras')
 
     g.markOutput('Capture.reproject')
     g.markOutput('Capture.diffuse')
@@ -106,7 +103,6 @@ def captureGraph():
 
 def yangGraph():
     g = RenderGraph('YangVRS')
-    g.addPass(createPass('BlitPass'), 'CSMBlit')
     g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'Raster')
     g.addPass(createPass('ToneMapper', {'autoExposure': True}), 'ToneMapper')
     g.addPass(createPass('TemporalReproject'), 'Reproject')
@@ -133,7 +129,6 @@ def yangGraph():
 
     # Features
     g.addEdge('CSM.visibility', 'Shading.visibility')
-    g.addEdge('CSM.visibility', 'CSMBlit.src')
     g.addEdge('Reproject.dst', 'YangVRS.input')
     g.addEdge('YangVRS.rate', 'Shading.vrs')
 
@@ -153,7 +148,6 @@ def yangGraph():
 
 def jaliGraph():
     g = RenderGraph('JaliVRS')
-    g.addPass(createPass('BlitPass'), 'CSMBlit')
     g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'Raster')
     g.addPass(createPass('ToneMapper', {'autoExposure': True}), 'ToneMapper')
     g.addPass(createPass('TemporalReproject'), 'Reproject')
@@ -180,7 +174,6 @@ def jaliGraph():
 
     # Features
     g.addEdge('CSM.visibility', 'Shading.visibility')
-    g.addEdge('CSM.visibility', 'CSMBlit.src')
     g.addEdge('Reproject.dst', 'JaliVRS.reproject')
     g.addEdge('Raster.diffuseOpacity', 'JaliVRS.diffuse')
     g.addEdge('Raster.normW', 'JaliVRS.normals')

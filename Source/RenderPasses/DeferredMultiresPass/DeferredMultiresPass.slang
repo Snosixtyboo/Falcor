@@ -23,6 +23,7 @@ StructuredBuffer<LightData> gLights;
 struct Output {
 	float4 color : SV_TARGET0;
 	float4 viewNormal : SV_TARGET1;
+    float4 extras: SV_TARGET2;
 };
 
 Output main(float2 uv : TEXCOORD) : SV_TARGET {
@@ -66,5 +67,6 @@ Output main(float2 uv : TEXCOORD) : SV_TARGET {
 	Output out;
 	out.color = color;
 	out.viewNormal = mul(float4(material.N, 0.0f), world2View);
+    out.extras = float4(shadow, material.NdotV, 0.0f, 0.0f);
 	return out;
 }

@@ -69,6 +69,7 @@ RenderPassReflection DeferredMultiresPass::reflect(const CompileData& data)
 
     reflector.addInput("visibility", "Visibility buffer used for shadowing").flags(RenderPassReflection::Field::Flags::Optional);
     reflector.addOutput("viewNormalsOut", "View-space normals");
+    reflector.addOutput("extrasOut", "Additional data useful for training");
     return reflector;
 }
 
@@ -80,6 +81,8 @@ void DeferredMultiresPass::execute(RenderContext* context, const RenderData& dat
         constants["world2View"] = scene->getCamera()->getViewMatrix();
 
         framebuffer->attachColorTarget(data["viewNormalsOut"]->asTexture(), 1);
+        framebuffer->attachColorTarget(data["extrasOut"]->asTexture(), 2);
+
         pass["gPosW"] = data["posW"]->asTexture();
         pass["gNormW"] = data["normW"]->asTexture();;
         pass["gDiffuse"] = data["diffuseOpacity"]->asTexture();;
