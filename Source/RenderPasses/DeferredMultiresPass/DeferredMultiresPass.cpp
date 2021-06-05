@@ -94,7 +94,7 @@ void DeferredMultiresPass::execute(RenderContext* context, const RenderData& dat
         d3d_call(context->getLowLevelData()->getCommandList()->QueryInterface(IID_PPV_ARGS(&directX)));
 
         for (const auto& rate : ShadingRates) {
-            for (int i = 1; i <= 1; i++)
+            for (int i = 1; i <= 2; i++)
                 context->clearRtv(framebuffer->getRenderTargetView(i).get(), float4(0, 0, 0, 1));
 
             directX->RSSetShadingRate(rate.id, nullptr);

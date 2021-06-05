@@ -7,6 +7,6 @@ struct Out {
 
 Out main(float2 uv : TEXCOORD) : SV_TARGET {
   Out out;
-  out.reprojected = source.SampleLevel(sampler, uv + motion[uv].xy, 0);
+  out.reprojected = source.SampleLevel(sampler, uv + motion.SampleLevel(sampler, uv, 0).xy, 0);
   return out;
 }
