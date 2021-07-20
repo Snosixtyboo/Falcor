@@ -60,19 +60,12 @@ JaliVRS::JaliVRS()
     if (!parser->parseFromFile(onnxPath, static_cast<int>(ILogger::Severity::kINFO)))
         throw std::runtime_error("Could not parse ONNX file");
 
-    /*auto profile = builder->createOptimizationProfile();
-    auto inputName = network->getInput(0)->getName();
-    profile->setDimensions(inputName, OptProfileSelector::kMIN, Dims4{ 1, 4, 2160, 3840 });
-    profile->setDimensions(inputName, OptProfileSelector::kOPT, Dims4{ 1, 4, 2160, 3840 });
-    profile->setDimensions(inputName, OptProfileSelector::kMAX, Dims4{ 1, 4, 2160, 3840 });
-    config->addOptimizationProfile(profile);*/
-
     config->setMaxWorkspaceSize((1 << 30));
     config->setFlag(BuilderFlag::kFP16);
     config->setFlag(BuilderFlag::kTF32);
     builder->setMaxBatchSize(1);
 
-    RT<ICudaEngine> engine {builder->buildEngineWithConfig(*network, *config)};
+    engine.reset(builder->buildEngineWithConfig(*network, *config));
     if (!engine.get())
         throw std::runtime_error("Error creating TensorRT engine");
 
@@ -89,10 +82,12 @@ JaliVRS::JaliVRS()
 
         if (name.compare("input") == 0) {
             copyIn["constant"]["resolution"] = resIn = int2(shape.d[3], shape.d[2]);
+            copyIn["constant"]["area"] = resIn.x * resIn.y;
             copyIn["input"] = buffer;
         }
         else if (name.compare("metric") == 0) {
             copyOut["constant"]["resolution"] = resOut = int2(shape.d[3], shape.d[2]);
+            copyOut["constant"]["area"] = resOut.x * resOut.y;
             copyOut["metric"] = buffer;
         }
         else {
@@ -103,8 +98,6 @@ JaliVRS::JaliVRS()
     }
 
     neural.reset(engine->createExecutionContext());
-    //neural->setBindingDimensions(0, { 1, 4, 2160, 3840 });
-    //neural->setOptimizationProfile(0);
 }
 
 RenderPassReflection JaliVRS::reflect(const CompileData& data)
@@ -124,8 +117,6 @@ void JaliVRS::execute(RenderContext* context, const RenderData& data)
     copyIn["normals"] = data["normals"]->asTexture();
     copyIn->execute(context, resIn.x, resIn.y);
 
-    std::cout << neural->allInputDimensionsSpecified() << "\n";
-    std::cout << neural->getOptimizationProfile() << "\n";
     neural->executeV2(buffers.data());
 
     copyOut["rate"] = data["rate"]->asTexture();

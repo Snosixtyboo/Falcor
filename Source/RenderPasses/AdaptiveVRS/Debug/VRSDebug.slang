@@ -9,7 +9,10 @@ void main(uint3 pixel : SV_DispatchThreadID)
     uint2 uv = pixel.xy;
     if (any(uv > resolution)) return;
 
-    if (any((uv % VRS_TILE) == uint2(0,0))) {
+    uint mode = rate[uv / VRS_TILE];
+    color[uv] = float3(mode/255.0, mode/255.0, mode/255.0);
+
+    /*if (any((uv % VRS_TILE) == uint2(0,0))) {
       color[uv] = rendering[uv] * 0.95 + float3(1,1,1) * 0.05;
     } else {
       uint mode = rate[uv / VRS_TILE];
@@ -28,5 +31,5 @@ void main(uint3 pixel : SV_DispatchThreadID)
 
         color[uv] = rendering[uv] * 0.95 + overlay * 0.05;
       }
-    }
+    }*/
 }

@@ -17,6 +17,7 @@ private:
 
     uint2 resIn, resOut;
     ComputePass::SharedPtr copyIn, copyOut;
+    RT<ICudaEngine> engine;
     RT<IExecutionContext> neural;
     std::vector<void*> buffers;
     float limit = 0.25f;

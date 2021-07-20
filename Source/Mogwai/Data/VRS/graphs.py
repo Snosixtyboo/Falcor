@@ -151,7 +151,7 @@ def jaliGraph():
     g.addPass(createPass('GBufferRaster', {'samplePattern': SamplePattern.Center, 'sampleCount': 16, 'disableAlphaTest': False, 'forceCullMode': False, 'cull': CullMode.CullBack}), 'Raster')
     g.addPass(createPass('ToneMapper', {'autoExposure': True}), 'ToneMapper')
     g.addPass(createPass('TemporalReproject'), 'Reproject')
-    g.addPass(createPass('DeferredPass'), 'Shading')
+    g.addPass(createPass('DeferredMultiresPass'), 'Shading')
     g.addPass(createPass('VRSDebug'), 'VRSDebug')
     g.addPass(createPass('JaliVRS'), 'JaliVRS')
     g.addPass(createPass('SkyBox'), 'SkyBox')
@@ -177,11 +177,11 @@ def jaliGraph():
     g.addEdge('Reproject.dst', 'JaliVRS.reproject')
     g.addEdge('Raster.diffuseOpacity', 'JaliVRS.diffuse')
     g.addEdge('Raster.normW', 'JaliVRS.normals')
-    g.addEdge('JaliVRS.rate', 'Shading.vrs')
+    #g.addEdge('JaliVRS.rate', 'Shading.vrs')
 
     # Post-Processing
-    g.addEdge('SkyBox.target', 'Shading.output')
-    g.addEdge('Shading.output', 'ToneMapper.src')
+    g.addEdge('SkyBox.target', 'Shading.color1x1')
+    g.addEdge('Shading.color1x1', 'ToneMapper.src')
     g.addEdge('ToneMapper.dst', 'SSAO.colorIn')
     g.addEdge('SSAO.colorOut', 'FXAA.src')
     g.addEdge('Reproject.target', 'FXAA.dst')

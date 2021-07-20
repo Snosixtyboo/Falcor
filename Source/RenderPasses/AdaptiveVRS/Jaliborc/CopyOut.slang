@@ -1,6 +1,6 @@
-cbuffer constant { uint2 resolution; }
+cbuffer constant { uint2 resolution; uint area; }
 StructuredBuffer<float> metric;
-RWTexture2D<float> rate;
+RWTexture2D<uint> rate;
 
 [numthreads(32, 32, 1)]
 void main(uint3 tile : SV_DispatchThreadID)
@@ -8,6 +8,6 @@ void main(uint3 tile : SV_DispatchThreadID)
     uint2 uv = tile.xy;
     if (any(uv > resolution)) return;
 
-    int i = uv.y * resolution.x + uv.x;
-    rate[uv] = metric[i]; // change to actual shading rate later
+    int k = uv.y * resolution.x + uv.x;
+    rate[uv] = metric[k] * 255;
 }
